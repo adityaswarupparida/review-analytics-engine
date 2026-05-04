@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "lib": ["ES2022"],
+    "types": ["bun-types"],
+    "outDir": "dist",
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*", "infra/**/*", "drizzle.config.ts"]
+}

@@ -1,0 +1,33 @@
+{
+  "name": "review-analytics",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "discover": "bun run src/main.ts discover",
+    "scrape": "bun run src/main.ts scrape",
+    "analyze": "bun run src/main.ts analyze",
+    "serve": "bun run src/main.ts serve",
+    "report": "bun run src/main.ts report",
+    "watch": "bun run src/main.ts watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.36.0",
+    "@azure/storage-blob": "^12.26.0",
+    "commander": "^13.1.0",
+    "drizzle-orm": "^0.40.0",
+    "eta": "^3.5.0",
+    "hono": "^4.7.0",
+    "marked": "^15.0.0",
+    "p-limit": "^6.2.0",
+    "pdfkit": "^0.15.2",
+    "resend": "^6.12.2",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/pdfkit": "^0.13.9",
+    "drizzle-kit": "^0.30.0",
+    "typescript": "^5.8.0"
+  }
+}

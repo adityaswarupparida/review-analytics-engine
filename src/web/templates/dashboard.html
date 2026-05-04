@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Review Analytics Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+    header { background: #1e293b; border-bottom: 1px solid #334155; padding: 1rem 2rem; display: flex; align-items: center; gap: 1rem; }
+    header h1 { font-size: 1.25rem; font-weight: 600; }
+    header span { font-size: 0.8rem; color: #64748b; }
+    main { padding: 2rem; display: grid; gap: 2rem; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 0.75rem; padding: 1.5rem; }
+    .card h2 { font-size: 0.875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; margin-bottom: 1rem; }
+    .chart-wrap { position: relative; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    th { text-align: left; padding: 0.5rem 0.75rem; color: #64748b; font-weight: 500; border-bottom: 1px solid #334155; }
+    td { padding: 0.5rem 0.75rem; border-bottom: 1px solid #1e293b; }
+    tr:hover td { background: #0f172a; }
+    .badge { display: inline-block; padding: 0.125rem 0.5rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
+    .badge-target { background: #0ea5e9; color: #fff; }
+    .badge-comp { background: #334155; color: #94a3b8; }
+    .loading { color: #475569; text-align: center; padding: 2rem; }
+    @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>📊 Review Analytics</h1>
+    <span id="subtitle">Loading...</span>
+  </header>
+  <main>
+    <!-- Revenue Comparison -->
+    <div class="card">
+      <h2>Estimated Monthly Revenue</h2>
+      <div class="chart-wrap"><canvas id="revenueChart" height="120"></canvas></div>
+    </div>
+
+    <div class="grid-2">
+      <!-- Sentiment Heatmap -->
+      <div class="card">
+        <h2>Sentiment by Purchase Criteria</h2>
+        <div class="chart-wrap"><canvas id="sentimentChart" height="260"></canvas></div>
+      </div>
+
+      <!-- Top Criteria -->
+      <div class="card">
+        <h2>Top Purchase Criteria (All Listings)</h2>
+        <div class="chart-wrap"><canvas id="criteriaChart" height="260"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Review Timeline -->
+    <div class="card">
+      <h2>Review Volume Over Time</h2>
+      <div class="chart-wrap"><canvas id="timelineChart" height="120"></canvas></div>
+    </div>
+
+    <!-- Listings Table -->
+    <div class="card">
+      <h2>Listings Summary</h2>
+      <div id="listingsTable" class="loading">Loading...</div>
+    </div>
+  </main>
+
+<script>
+const COLORS = [
+  '#0ea5e9','#f59e0b','#10b981','#8b5cf6','#f43f5e',
+  '#06b6d4','#84cc16','#fb923c','#a78bfa','#34d399',
+];
+
+async function fetchJson(url) {
+  const res = await fetch(url);
+  return res.json();
+}
+
+function shortTitle(title, max = 30) {
+  if (!title) return 'Unknown';
+  return title.length > max ? title.slice(0, max) + '…' : title;
+}
+
+// Revenue Chart
+async function buildRevenueChart() {
+  const { listings, revenueEstimates } = await fetchJson('/api/listings');
+  const estMap = Object.fromEntries(revenueEstimates.map(e => [e.listing_id, e]));
+
+  const target = listings.find(l => l.is_target);
+  document.getElementById('subtitle').textContent =
+    target ? `Target: ${shortTitle(target.title, 60)}` : '';
+
+  const labels = listings.map(l => shortTitle(l.title));
+  const data = listings.map(l => estMap[l.id]?.revenue_per_month ?? 0);
+  const bgColors = listings.map(l => l.is_target ? '#0ea5e9' : '#334155');
+
+  new Chart(document.getElementById('revenueChart'), {
+    type: 'bar',
+    data: { labels, datasets: [{ label: 'Revenue/mo ($)', data, backgroundColor: bgColors }] },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' } },
+        y: { ticks: { color: '#94a3b8', callback: v => '$' + Number(v).toLocaleString() }, grid: { color: '#334155' } },
+      },
+    },
+  });
+
+  // Listings Table
+  const rows = listings.map(l => {
+    const est = estMap[l.id];
+    return `<tr>
+      <td><span class="badge ${l.is_target ? 'badge-target' : 'badge-comp'}">${l.is_target ? 'Target' : 'Comp'}</span></td>
+      <td>${l.asin}</td>
+      <td>${shortTitle(l.title, 50)}</td>
+      <td>$${(l.price ?? 0).toFixed(2)}</td>
+      <td>#${(l.bsr ?? 0).toLocaleString()}</td>
+      <td>${(l.rating_avg ?? 0).toFixed(1)} ⭐ (${(l.rating_count ?? 0).toLocaleString()})</td>
+      <td>${est ? '$' + (est.revenue_per_month ?? 0).toLocaleString() : '—'}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('listingsTable').innerHTML = `
+    <table>
+      <thead><tr><th>Type</th><th>ASIN</th><th>Title</th><th>Price</th><th>BSR</th><th>Rating</th><th>Est. Revenue/mo</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+
+  return listings;
+}
+
+// Criteria Chart
+async function buildCriteriaChart() {
+  const { criteria } = await fetchJson('/api/criteria/all');
+  new Chart(document.getElementById('criteriaChart'), {
+    type: 'bar',
+    data: {
+      labels: criteria.map(c => c.criterion),
+      datasets: [{
+        label: 'Frequency',
+        data: criteria.map(c => c.totalFrequency),
+        backgroundColor: COLORS,
+        borderRadius: 4,
+      }],
+    },
+    options: {
+      indexAxis: 'y',
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
+        y: { ticks: { color: '#e2e8f0' }, grid: { color: '#1e293b' } },
+      },
+    },
+  });
+}
+
+// Sentiment Heatmap (rendered as stacked bar approximation)
+async function buildSentimentChart() {
+  const { data } = await fetchJson('/api/sentiment/heatmap');
+
+  const listings = [...new Set(data.map(d => d.asin))];
+  const criteria = [...new Set(data.map(d => d.criterion))].slice(0, 8);
+
+  const datasets = criteria.map((criterion, i) => ({
+    label: criterion,
+    data: listings.map(asin => {
+      const row = data.find(d => d.asin === asin && d.criterion === criterion);
+      return row ? Math.round(row.sentimentAvg * 100) : null;
+    }),
+    backgroundColor: COLORS[i % COLORS.length] + 'cc',
+    borderRadius: 2,
+  }));
+
+  new Chart(document.getElementById('sentimentChart'), {
+    type: 'bar',
+    data: { labels: listings, datasets },
+    options: {
+      plugins: { legend: { labels: { color: '#94a3b8', boxWidth: 10, font: { size: 10 } } } },
+      scales: {
+        x: { stacked: false, ticks: { color: '#94a3b8', maxRotation: 45 }, grid: { color: '#1e293b' } },
+        y: {
+          ticks: { color: '#94a3b8', callback: v => v + '%' },
+          grid: { color: '#334155' },
+          title: { display: true, text: 'Sentiment (%)', color: '#64748b' },
+        },
+      },
+    },
+  });
+}
+
+// Timeline Chart
+async function buildTimelineChart(listings) {
+  const allTimelines = await Promise.all(
+    listings.map(l => fetchJson(`/api/reviews/timeline/${l.id}`).then(d => ({ listing: l, ...d })))
+  );
+
+  const allMonths = [...new Set(allTimelines.flatMap(t => t.timeline.map(p => p.month)))].sort();
+
+  const datasets = allTimelines.map((t, i) => ({
+    label: shortTitle(t.listing.title, 25),
+    data: allMonths.map(m => {
+      const point = t.timeline.find(p => p.month === m);
+      return point?.count ?? 0;
+    }),
+    borderColor: COLORS[i % COLORS.length],
+    backgroundColor: 'transparent',
+    tension: 0.3,
+    borderWidth: 2,
+    pointRadius: 2,
+  }));
+
+  new Chart(document.getElementById('timelineChart'), {
+    type: 'line',
+    data: { labels: allMonths, datasets },
+    options: {
+      plugins: { legend: { labels: { color: '#94a3b8', boxWidth: 10, font: { size: 10 } } } },
+      scales: {
+        x: { ticks: { color: '#94a3b8', maxTicksLimit: 12 }, grid: { color: '#1e293b' } },
+        y: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
+      },
+    },
+  });
+}
+
+(async () => {
+  try {
+    const listings = await buildRevenueChart();
+    await Promise.all([buildCriteriaChart(), buildSentimentChart(), buildTimelineChart(listings)]);
+  } catch (err) {
+    console.error('Dashboard error:', err);
+  }
+})();
+</script>
+</body>
+</html>

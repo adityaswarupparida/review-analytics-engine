@@ -1,0 +1,14 @@
+node_modules/
+
+# Environment — never commit secrets
+.env
+
+# Generated data — too large, rebuilt by running the pipeline
+data/
+output/
+drizzle/
+
+# macOS
+.DS_Store
+
+CHECKPOINTS.md
