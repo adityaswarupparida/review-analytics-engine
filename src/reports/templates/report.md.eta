@@ -1,7 +1,9 @@
 # Amazon Product Review Analytics Report
 
 **Generated:** <%= it.generatedAt %>
+
 **Target ASIN:** `<%= it.target.asin %>` — <%= it.target.title %>
+
 **Category:** <%= it.category %>
 
 ---
@@ -12,22 +14,23 @@
 |--------|-------|
 | Listings analyzed | <%= it.listings.length %> |
 | Total reviews scraped | <%= it.totalReviews.toLocaleString() %> |
-| Target monthly revenue (est.) | $<%= it.targetRevenue?.toLocaleString() ?? "N/A" %> |
+| Target monthly revenue (est.) | ₹<%= it.targetRevenue?.toLocaleString() ?? "N/A" %> |
 | Target BSR | #<%= it.target.bsr?.toLocaleString() ?? "N/A" %> |
 | Market leader (by revenue) | <%= it.leader?.title?.slice(0, 60) ?? "N/A" %> |
-| Market leader revenue (est.) | $<%= it.leaderRevenue?.toLocaleString() ?? "N/A" %> |
+| Market leader revenue (est.) | ₹<%= it.leaderRevenue?.toLocaleString() ?? "N/A" %> |
 
 ---
 
 ## Revenue Estimates (per Listing)
 
 <% for (const est of it.revenueEstimates) { %>
-### <%= est.listing.isTarget ? "🎯 [TARGET] " : "" %><%= est.listing.title?.slice(0, 70) %>
+### <%= est.listing.isTarget ? "🎯 [TARGET] " : "" %><%= est.listing.title && est.listing.title.length > 70 ? est.listing.title.slice(0, 70) + "..." : est.listing.title %>
+
 - **ASIN:** `<%= est.listing.asin %>`
-- **Price:** $<%= (est.price ?? 0).toFixed(2) %>
-- **BSR:** #<%= (est.bsr ?? 0).toLocaleString() %>
+- **Price:** ₹<%= (est.price ?? 0).toLocaleString() %>
+- **BSR:** #<%= est.bsr ? est.bsr.toLocaleString() : "N/A" %>
 - **Estimated Sales/Month:** ~<%= (est.salesPerMonth ?? 0).toLocaleString() %> units
-- **Estimated Revenue/Month:** $<%= (est.revenuePerMonth ?? 0).toLocaleString() %>
+- **Estimated Revenue/Month:** ₹<%= (est.revenuePerMonth ?? 0).toLocaleString() %>
 
 <% } %>
 
@@ -37,6 +40,7 @@
 
 <% for (const [i, c] of it.topCriteria.entries()) { %>
 ### <%= i + 1 %>. <%= c.criterion %>
+
 - **Total Mentions:** <%= c.totalFrequency.toLocaleString() %>
 - **Avg Sentiment:** <%= c.avgSentiment >= 0 ? "+" : "" %><%= (c.avgSentiment * 100).toFixed(0) %>%
 
@@ -47,11 +51,11 @@
 ## Per-Listing Criteria Breakdown
 
 <% for (const l of it.listingBreakdowns) { %>
-### <%= l.listing.isTarget ? "🎯 " : "" %><%= l.listing.asin %> — <%= l.listing.title?.slice(0, 60) %>
+### <%= l.listing.isTarget ? "🎯 " : "" %><%= l.listing.asin %> — <%= l.listing.title && l.listing.title.length > 60 ? l.listing.title.slice(0, 60) + "..." : l.listing.title %>
 
-| Criterion | Frequency | Sentiment | Top Complaints | Top Positives |
-|-----------|-----------|-----------|----------------|---------------|
-<% for (const c of l.criteria) { %>| <%= c.criterion %> | <%= c.frequency %> | <%= ((c.sentimentAvg ?? 0) * 100).toFixed(0) %>% | <%= JSON.parse(c.topComplaints ?? "[]").slice(0,1).join("; ") %> | <%= JSON.parse(c.topPositives ?? "[]").slice(0,1).join("; ") %> |
+| Criterion | Mentions | Sentiment | Top Complaint | Top Positive |
+|-----------|----------|-----------|---------------|--------------|
+<% for (const c of l.criteria) { %>| <%= c.criterion %> | <%= c.frequency %> | <%= ((c.sentimentAvg ?? 0) * 100).toFixed(0) %>% | <%= JSON.parse(c.topComplaints ?? "[]")[0] ?? "" %> | <%= JSON.parse(c.topPositives ?? "[]")[0] ?? "" %> |
 <% } %>
 
 <% } %>

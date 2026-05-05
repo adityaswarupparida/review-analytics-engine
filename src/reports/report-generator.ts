@@ -18,6 +18,7 @@ import type { Listing, RevenueEstimate, PurchaseCriterion } from "../database/sc
 const eta = new Eta({
   views: path.join(import.meta.dir, "templates"),
   defaultExtension: ".eta",
+  autoTrim: false,
   cache: false,
 });
 
@@ -90,7 +91,7 @@ export async function generateReport(runId?: string, includePdf = false, emailTo
   const data = await gatherData(resolvedRunId);
 
   console.log("  Rendering Markdown...");
-  const markdown = await eta.renderAsync("report.md", { it: data });
+  const markdown = await eta.renderAsync("report.md.eta", data);
   if (!markdown) throw new Error("Template rendering returned empty");
   fs.writeFileSync(mdPath, markdown, "utf8");
   console.log(`  ✓ Markdown saved: ${mdPath}`);

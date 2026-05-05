@@ -19,7 +19,7 @@ export async function uploadToBlob(
   const containerClient = client.getContainerClient(config.AZURE_STORAGE_CONTAINER);
 
   // Create container if it doesn't exist
-  await containerClient.createIfNotExists({ access: "blob" });
+  await containerClient.createIfNotExists();
 
   const blobClient = containerClient.getBlockBlobClient(blobName);
   await blobClient.upload(data, data.length, {
