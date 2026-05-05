@@ -52,7 +52,7 @@ app.get("/dashboard", async (c) => {
 
 // POST /api/run — start a new pipeline job
 app.post("/api/run", async (c) => {
-  let body: { asin?: string; category?: string };
+  let body: { asin?: string; category?: string; email?: string };
   try {
     body = await c.req.json();
   } catch {
@@ -61,6 +61,7 @@ app.post("/api/run", async (c) => {
 
   const asin = (body.asin ?? "").trim().toUpperCase();
   const category = (body.category ?? config.AMAZON_CATEGORY) as AmazonCategory;
+  const email = body.email?.trim() || undefined;
 
   if (!asin || asin.length !== 10) {
     return c.json({ error: "ASIN must be exactly 10 characters" }, 400);
@@ -74,7 +75,7 @@ app.post("/api/run", async (c) => {
   const jobId = `job-${Date.now()}`;
 
   // Start pipeline in background (don't await)
-  runPipeline(asin, category, jobId).catch((err) =>
+  runPipeline(asin, category, jobId, email).catch((err) =>
     console.error("Pipeline error:", err)
   );
 

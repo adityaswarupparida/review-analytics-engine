@@ -3,7 +3,7 @@ import { ReviewFetcher } from "../scraper/review-fetcher.js";
 import { RevenueEstimator } from "../analysis/revenue-estimator.js";
 import { ReviewAnalyzer } from "../analysis/review-analyzer.js";
 import { CriteriaAggregator } from "../analysis/criteria-aggregator.js";
-import { getLatestRunId } from "../database/db.js";
+import { generateReport } from "../reports/report-generator.js";
 import { config, type AmazonCategory } from "../config.js";
 
 export type StepStatus = "pending" | "running" | "done" | "error";
@@ -44,7 +44,7 @@ export function getJobHistory(runId: string): ProgressEvent[] {
   return completedJobs.get(runId) ?? [];
 }
 
-export async function runPipeline(asin: string, category: AmazonCategory, jobId: string): Promise<string> {
+export async function runPipeline(asin: string, category: AmazonCategory, jobId: string, email?: string): Promise<string> {
   const tempId = jobId;
   const history: ProgressEvent[] = [];
 
@@ -85,8 +85,12 @@ export async function runPipeline(asin: string, category: AmazonCategory, jobId:
     await new CriteriaAggregator().aggregateAll(realRunId);
     send("aggregate", STEPS[3]!.label, "done", "Criteria aggregated", realRunId);
 
-    // Step 5: Complete
-    send("complete", STEPS[4]!.label, "done", "Ready!", realRunId);
+    // Step 5: Complete — generate report + optionally send email
+    const msg = email ? "Generating report & sending email..." : "Preparing analytics...";
+    send("complete", STEPS[4]!.label, "running", msg, realRunId);
+    await generateReport(realRunId, undefined, email);
+    const doneMsg = email ? `Report sent to ${email}! Dashboard is ready.` : "Dashboard is ready.";
+    send("complete", STEPS[4]!.label, "done", doneMsg, realRunId);
 
   } catch (err) {
     const msg = (err as Error).message;

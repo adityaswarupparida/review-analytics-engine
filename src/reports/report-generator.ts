@@ -77,7 +77,7 @@ async function gatherData(runId: string): Promise<ReportData> {
   };
 }
 
-export async function generateReport(runId?: string, includePdf = false): Promise<void> {
+export async function generateReport(runId?: string, includePdf = false, emailTo?: string): Promise<void> {
   const outputDir = "./output";
   if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
 
@@ -113,13 +113,11 @@ export async function generateReport(runId?: string, includePdf = false): Promis
   );
   console.log("  ✓ Report uploaded to Azure Blob");
 
-  // Send email
-  if (config.RESEND_API_KEY && config.REPORT_EMAIL_TO) {
+  // Send email only if address provided via UI
+  if (config.RESEND_API_KEY && emailTo) {
     console.log("  Sending email...");
-    await sendReportEmail(markdown, mdPath, dateStr);
-    console.log(`  ✓ Report emailed to ${config.REPORT_EMAIL_TO}`);
-  } else {
-    console.log("  ℹ SENDGRID_API_KEY not set, skipping email");
+    await sendReportEmail(markdown, mdPath, dateStr, emailTo);
+    console.log(`  ✓ Report emailed to ${emailTo}`);
   }
 
   console.log(`\n✅ Report complete: ${mdPath}`);

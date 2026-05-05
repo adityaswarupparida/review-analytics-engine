@@ -4,16 +4,15 @@ import { config } from "../src/config.js";
 export async function sendReportEmail(
   markdownContent: string,
   _mdPath: string,
-  dateStr: string
+  dateStr: string,
+  emailTo: string
 ): Promise<void> {
-  if (!config.RESEND_API_KEY || !config.REPORT_EMAIL_TO) {
-    console.log("  Resend not configured, skipping email");
+  if (!config.RESEND_API_KEY) {
+    console.log("  RESEND_API_KEY not set, skipping email");
     return;
   }
 
   const resend = new Resend(config.RESEND_API_KEY);
-
-  // Use onboarding@resend.dev for testing, or your verified domain in prod
   const from = config.REPORT_EMAIL_FROM ?? "onboarding@resend.dev";
 
   const htmlBody = `
@@ -28,7 +27,7 @@ export async function sendReportEmail(
 
   await resend.emails.send({
     from,
-    to: config.REPORT_EMAIL_TO,
+    to: emailTo,
     subject: `Review Analytics Report — ${dateStr}`,
     html: htmlBody,
     attachments: [

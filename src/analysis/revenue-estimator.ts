@@ -50,7 +50,7 @@ export class RevenueEstimator {
       console.log(
         `  ✓ ${listing.asin}: BSR #${listing.bsr.toLocaleString()} → ` +
         `~${estimate.salesPerMonth.toLocaleString()} units/mo → ` +
-        `$${estimate.revenuePerMonth.toLocaleString()}/mo`
+        `₹${estimate.revenuePerMonth.toLocaleString()}/mo`
       );
     }
 

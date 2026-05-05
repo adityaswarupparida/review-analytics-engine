@@ -7,60 +7,84 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
-    header { background: #1e293b; border-bottom: 1px solid #334155; padding: 1rem 2rem; display: flex; align-items: center; justify-content: space-between; }
+
+    header {
+      background: #1e293b; border-bottom: 1px solid #334155;
+      padding: 1rem 2rem; display: flex; align-items: center; justify-content: space-between;
+    }
     header h1 { font-size: 1.25rem; font-weight: 700; }
     header span { font-size: 0.8rem; color: #64748b; }
-    main { max-width: 800px; margin: 0 auto; padding: 3rem 2rem; }
 
-    .hero { text-align: center; margin-bottom: 3rem; }
-    .hero h2 { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.75rem; }
-    .hero p { color: #94a3b8; font-size: 1rem; }
+    main { max-width: 860px; margin: 0 auto; padding: 3rem 2rem; }
 
-    .card { background: #1e293b; border: 1px solid #334155; border-radius: 0.75rem; padding: 2rem; margin-bottom: 2rem; }
-    .card h3 { font-size: 1rem; font-weight: 600; margin-bottom: 1.25rem; color: #e2e8f0; }
-
-    .form-row { display: flex; gap: 0.75rem; }
-    input[type="text"] {
-      flex: 1; padding: 0.625rem 1rem; background: #0f172a; border: 1px solid #334155;
-      border-radius: 0.5rem; color: #e2e8f0; font-size: 0.9rem; outline: none;
+    /* Hero */
+    .hero { text-align: center; margin-bottom: 2.5rem; }
+    .hero-badge {
+      display: inline-block; background: #0c4a6e; color: #38bdf8;
+      font-size: 0.75rem; font-weight: 600; padding: 0.25rem 0.75rem;
+      border-radius: 9999px; border: 1px solid #0ea5e9; margin-bottom: 1rem;
     }
-    input[type="text"]:focus { border-color: #0ea5e9; }
-    input[type="text"]::placeholder { color: #475569; }
+    .hero h2 { font-size: 2rem; font-weight: 800; margin-bottom: 0.75rem; line-height: 1.2; }
+    .hero h2 span { color: #38bdf8; }
+    .hero p { color: #94a3b8; font-size: 0.95rem; max-width: 480px; margin: 0 auto; }
 
-    select {
-      padding: 0.625rem 1rem; background: #0f172a; border: 1px solid #334155;
-      border-radius: 0.5rem; color: #e2e8f0; font-size: 0.9rem; outline: none;
+    /* Stats row */
+    .stats { display: flex; gap: 1rem; justify-content: center; margin-bottom: 2.5rem; }
+    .stat { text-align: center; padding: 0.75rem 1.5rem; background: #1e293b; border: 1px solid #334155; border-radius: 0.5rem; }
+    .stat-val { font-size: 1.25rem; font-weight: 700; color: #38bdf8; }
+    .stat-lbl { font-size: 0.75rem; color: #64748b; margin-top: 0.1rem; }
+
+    /* Card */
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 0.75rem; padding: 1.75rem; margin-bottom: 1.5rem; }
+    .card-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.25rem; }
+    .card-header h3 { font-size: 0.95rem; font-weight: 600; }
+    .card-header .dot { width: 8px; height: 8px; border-radius: 9999px; background: #0ea5e9; }
+
+    /* Form */
+    .form-row { display: flex; gap: 0.75rem; margin-bottom: 0.75rem; }
+    .form-row-full { display: flex; gap: 0.75rem; }
+    label { display: block; font-size: 0.75rem; color: #64748b; margin-bottom: 0.3rem; font-weight: 500; letter-spacing: 0.03em; text-transform: uppercase; }
+
+    input[type="text"], input[type="email"], select {
+      width: 100%; padding: 0.65rem 1rem; background: #0f172a;
+      border: 1px solid #334155; border-radius: 0.5rem; color: #e2e8f0;
+      font-size: 0.9rem; outline: none; transition: border-color 0.15s;
     }
-    select:focus { border-color: #0ea5e9; }
+    input:focus, select:focus { border-color: #0ea5e9; box-shadow: 0 0 0 3px rgba(14,165,233,0.1); }
+    input::placeholder { color: #475569; }
 
     .btn-primary {
-      padding: 0.625rem 1.5rem; background: #0ea5e9; color: #fff; border: none;
-      border-radius: 0.5rem; font-size: 0.9rem; font-weight: 600; cursor: pointer;
-      white-space: nowrap;
+      width: 100%; padding: 0.75rem; background: #0ea5e9; color: #fff;
+      border: none; border-radius: 0.5rem; font-size: 0.9rem; font-weight: 700;
+      cursor: pointer; transition: background 0.15s; letter-spacing: 0.02em;
     }
     .btn-primary:hover { background: #0284c7; }
-    .btn-primary:disabled { background: #334155; color: #64748b; cursor: not-allowed; }
+    .btn-primary:disabled { background: #1e3a5f; color: #64748b; cursor: not-allowed; }
 
-    .error { color: #f87171; font-size: 0.85rem; margin-top: 0.5rem; display: none; }
+    .hint { font-size: 0.78rem; color: #475569; margin-top: 0.4rem; }
+    .error { color: #f87171; font-size: 0.82rem; margin-top: 0.5rem; display: none; }
 
     /* Past runs */
-    .runs-list { display: flex; flex-direction: column; gap: 0.75rem; }
+    .section-title { font-size: 0.75rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem; }
+    .runs-list { display: flex; flex-direction: column; gap: 0.6rem; }
     .run-item {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 0.875rem 1rem; background: #0f172a; border: 1px solid #334155;
+      padding: 0.875rem 1rem; background: #0f172a; border: 1px solid #1e293b;
       border-radius: 0.5rem; text-decoration: none; color: #e2e8f0;
-      transition: border-color 0.15s;
+      transition: border-color 0.15s, background 0.15s;
     }
-    .run-item:hover { border-color: #0ea5e9; }
-    .run-meta { display: flex; flex-direction: column; gap: 0.2rem; }
-    .run-asin { font-weight: 600; font-size: 0.9rem; }
-    .run-date { font-size: 0.75rem; color: #64748b; }
-    .run-status { font-size: 0.75rem; padding: 0.2rem 0.6rem; border-radius: 9999px; font-weight: 600; }
+    .run-item:hover { border-color: #0ea5e9; background: #0c1829; }
+    .run-left { display: flex; flex-direction: column; gap: 0.2rem; }
+    .run-asin { font-weight: 600; font-size: 0.875rem; font-family: monospace; color: #38bdf8; }
+    .run-info { font-size: 0.75rem; color: #475569; }
+    .run-right { display: flex; align-items: center; gap: 0.75rem; }
+    .status { font-size: 0.7rem; padding: 0.2rem 0.6rem; border-radius: 9999px; font-weight: 600; }
     .status-complete { background: #064e3b; color: #6ee7b7; }
     .status-running  { background: #1e3a5f; color: #93c5fd; }
     .status-error    { background: #450a0a; color: #fca5a5; }
-    .empty { color: #475569; text-align: center; padding: 2rem; font-size: 0.9rem; }
-    .arrow { color: #64748b; font-size: 1rem; }
+    .status-other    { background: #1e293b; color: #64748b; }
+    .arrow { color: #334155; font-size: 0.9rem; }
+    .empty { color: #334155; text-align: center; padding: 2rem; font-size: 0.85rem; border: 1px dashed #1e293b; border-radius: 0.5rem; }
   </style>
 </head>
 <body>
@@ -70,37 +94,55 @@
   </header>
   <main>
     <div class="hero">
-      <h2>Analyse Your Amazon Listing</h2>
-      <p>Discover competitors, scrape reviews and get AI-powered purchase criteria insights</p>
+      <div class="hero-badge">Powered by Claude AI</div>
+      <h2>Analyse Your <span>Amazon Listing</span></h2>
+      <p>Discover competitors, scrape reviews and get AI-powered purchase criteria insights in minutes</p>
     </div>
 
     <!-- New Analysis -->
     <div class="card">
-      <h3>🚀 Start New Analysis</h3>
-      <div class="form-row">
-        <input type="text" id="asin" placeholder="Enter ASIN (e.g. B0DCZ9PRCP)" maxlength="10"/>
-        <select id="category">
-          <option value="electronics">Electronics</option>
-          <option value="home_kitchen">Home & Kitchen</option>
-          <option value="sports_outdoors">Sports & Outdoors</option>
-          <option value="tools_home_improvement">Tools & Home Improvement</option>
-          <option value="toys_games">Toys & Games</option>
-          <option value="beauty_personal_care">Beauty & Personal Care</option>
-          <option value="health_household">Health & Household</option>
-          <option value="clothing_shoes">Clothing & Shoes</option>
-          <option value="office_products">Office Products</option>
-          <option value="pet_supplies">Pet Supplies</option>
-        </select>
-        <button class="btn-primary" id="startBtn" onclick="startAnalysis()">Analyse</button>
+      <div class="card-header">
+        <div class="dot"></div>
+        <h3>Start New Analysis</h3>
       </div>
+
+      <div class="form-row">
+        <div style="flex:1">
+          <label>Product ASIN</label>
+          <input type="text" id="asin" placeholder="e.g. B0DCZ9PRCP" maxlength="10"/>
+        </div>
+        <div style="flex:1">
+          <label>Category</label>
+          <select id="category">
+            <option value="electronics">Electronics</option>
+            <option value="home_kitchen">Home & Kitchen</option>
+            <option value="sports_outdoors">Sports & Outdoors</option>
+            <option value="tools_home_improvement">Tools & Home Improvement</option>
+            <option value="toys_games">Toys & Games</option>
+            <option value="beauty_personal_care">Beauty & Personal Care</option>
+            <option value="health_household">Health & Household</option>
+            <option value="clothing_shoes">Clothing & Shoes</option>
+            <option value="office_products">Office Products</option>
+            <option value="pet_supplies">Pet Supplies</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-bottom:1rem">
+        <label>Email for Report <span style="color:#334155;font-weight:400;text-transform:none">(optional)</span></label>
+        <input type="email" id="email" placeholder="you@example.com — receive the full report when done"/>
+        <div class="hint">Leave blank to skip email. Report is always available on the dashboard.</div>
+      </div>
+
+      <button class="btn-primary" id="startBtn" onclick="startAnalysis()">🚀 Start Analysis</button>
       <div class="error" id="err"></div>
     </div>
 
     <!-- Past Runs -->
-    <div class="card">
-      <h3>📁 Past Runs</h3>
+    <div>
+      <div class="section-title">Past Runs</div>
       <div id="runsList" class="runs-list">
-        <div class="empty">Loading...</div>
+        <div class="empty">Loading past runs...</div>
       </div>
     </div>
   </main>
@@ -116,25 +158,27 @@ async function loadRuns() {
     return;
   }
 
-  el.innerHTML = runs.map(r => `
-    <a class="run-item" href="/dashboard?run=${r.id}">
-      <div class="run-meta">
-        <span class="run-asin">${r.targetAsin}</span>
-        <span class="run-date">${new Date(r.createdAt).toLocaleString()} · ${r.category}</span>
-      </div>
-      <div style="display:flex;align-items:center;gap:0.75rem">
-        <span class="run-status status-${r.status === 'complete' ? 'complete' : r.status === 'error' ? 'error' : 'running'}">
-          ${r.status}
-        </span>
-        <span class="arrow">→</span>
-      </div>
-    </a>
-  `).join('');
+  el.innerHTML = runs.map(r => {
+    const statusClass = r.status === 'complete' ? 'complete' : r.status === 'error' ? 'error' : r.status === 'scraping' || r.status === 'analyzing' || r.status === 'discovering' ? 'running' : 'other';
+    const date = new Date(r.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+    return `
+      <a class="run-item" href="/dashboard?run=${r.id}">
+        <div class="run-left">
+          <span class="run-asin">${r.targetAsin}</span>
+          <span class="run-info">${date} · ${r.category.replace(/_/g, ' ')}</span>
+        </div>
+        <div class="run-right">
+          <span class="status status-${statusClass}">${r.status}</span>
+          <span class="arrow">→</span>
+        </div>
+      </a>`;
+  }).join('');
 }
 
 async function startAnalysis() {
   const asin = document.getElementById('asin').value.trim().toUpperCase();
   const category = document.getElementById('category').value;
+  const email = document.getElementById('email').value.trim();
   const err = document.getElementById('err');
   const btn = document.getElementById('startBtn');
 
@@ -152,7 +196,7 @@ async function startAnalysis() {
   const res = await fetch('/api/run', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ asin, category }),
+    body: JSON.stringify({ asin, category, email: email || undefined }),
   });
 
   const data = await res.json();
@@ -161,7 +205,7 @@ async function startAnalysis() {
     err.textContent = data.error ?? 'Failed to start analysis';
     err.style.display = 'block';
     btn.disabled = false;
-    btn.textContent = 'Analyse';
+    btn.textContent = '🚀 Start Analysis';
     return;
   }
 

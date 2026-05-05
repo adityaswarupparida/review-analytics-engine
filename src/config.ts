@@ -21,7 +21,6 @@ const envSchema = z.object({
   AZURE_STORAGE_CONNECTION_STRING: z.string().min(1),
   AZURE_STORAGE_CONTAINER: z.string().default("review-analytics"),
   RESEND_API_KEY: z.string().optional(),
-  REPORT_EMAIL_TO: z.string().email().optional(),
   REPORT_EMAIL_FROM: z.string().email().optional(),
   TARGET_ASIN: z.string().min(10).max(10),
   AMAZON_CATEGORY: z.enum(AMAZON_CATEGORIES).default("electronics"),
