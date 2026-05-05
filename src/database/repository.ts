@@ -196,11 +196,14 @@ export async function getRevenueEstimatesForRun(
   const listingIds = runListings.map((l) => l.id);
   if (listingIds.length === 0) return [];
 
-  const estimates = await db.query.revenueEstimates.findMany({
+  const estimateRows = await db.query.revenueEstimates.findMany({
     where: inArray(revenueEstimates.listingId, listingIds),
-    with: { listing: true },
   });
-  return estimates as (RevenueEstimate & { listing: Listing })[];
+
+  const listingMap = new Map(runListings.map((l) => [l.id, l]));
+  return estimateRows
+    .filter((e) => listingMap.has(e.listingId))
+    .map((e) => ({ ...e, listing: listingMap.get(e.listingId)! })) as (RevenueEstimate & { listing: Listing })[];
 }
 
 // ── Analysis Batches ──────────────────────────────────────────────────────────

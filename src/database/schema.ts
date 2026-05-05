@@ -52,6 +52,7 @@ export const reviews = sqliteTable(
     rating: real("rating"),
     verified: integer("verified", { mode: "boolean" }),
     date: text("date"),
+    country: text("country"),
     helpfulVotes: integer("helpful_votes"),
   },
   (t) => [

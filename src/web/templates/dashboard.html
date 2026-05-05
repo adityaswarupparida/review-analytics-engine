@@ -17,11 +17,12 @@
     .card h2 { font-size: 0.875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; margin-bottom: 1rem; }
     .chart-wrap { position: relative; }
     table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
-    th { text-align: left; padding: 0.5rem 0.75rem; color: #64748b; font-weight: 500; border-bottom: 1px solid #334155; }
-    td { padding: 0.5rem 0.75rem; border-bottom: 1px solid #1e293b; }
+    th { text-align: center; padding: 0.5rem 0.75rem; color: #64748b; font-weight: 500; border-bottom: 1px solid #334155; }
+    td { padding: 0.5rem 0.75rem; border-bottom: 1px solid #1e293b; color: #e2e8f0; text-align: center; }
+    td:nth-child(2), td:nth-child(3) { text-align: left; }
     tr:hover td { background: #0f172a; }
     .badge { display: inline-block; padding: 0.125rem 0.5rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
-    .badge-target { background: #0ea5e9; color: #fff; }
+    .badge-target { background: #10b981; color: #fff; }
     .badge-comp { background: #334155; color: #94a3b8; }
     .loading { color: #475569; text-align: center; padding: 2rem; }
     @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
@@ -85,15 +86,15 @@ function shortTitle(title, max = 30) {
 // Revenue Chart
 async function buildRevenueChart() {
   const { listings, revenueEstimates } = await fetchJson('/api/listings');
-  const estMap = Object.fromEntries(revenueEstimates.map(e => [e.listing_id, e]));
+  const estMap = Object.fromEntries(revenueEstimates.map(e => [e.listingId, e]));
 
-  const target = listings.find(l => l.is_target);
+  const target = listings.find(l => l.isTarget);
   document.getElementById('subtitle').textContent =
-    target ? `Target: ${shortTitle(target.title, 60)}` : '';
+    target ? `Yours: ${shortTitle(target.title, 60)}` : '';
 
   const labels = listings.map(l => shortTitle(l.title));
-  const data = listings.map(l => estMap[l.id]?.revenue_per_month ?? 0);
-  const bgColors = listings.map(l => l.is_target ? '#0ea5e9' : '#334155');
+  const data = listings.map(l => estMap[l.id]?.revenuePerMonth ?? 0);
+  const bgColors = listings.map(l => l.isTarget ? '#0ea5e9' : '#334155');
 
   new Chart(document.getElementById('revenueChart'), {
     type: 'bar',
@@ -102,22 +103,28 @@ async function buildRevenueChart() {
       plugins: { legend: { display: false } },
       scales: {
         x: { ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' } },
-        y: { ticks: { color: '#94a3b8', callback: v => '$' + Number(v).toLocaleString() }, grid: { color: '#334155' } },
+        y: { ticks: { color: '#94a3b8', callback: v => '₹' + Number(v).toLocaleString() }, grid: { color: '#334155' } },
       },
     },
   });
 
-  // Listings Table
-  const rows = listings.map(l => {
+  // Listings Table — Yours pinned top, competitors sorted by revenue descending
+  const yours = listings.filter(l => l.isTarget);
+  const competitors = listings
+    .filter(l => !l.isTarget)
+    .sort((a, b) => (estMap[b.id]?.revenuePerMonth ?? 0) - (estMap[a.id]?.revenuePerMonth ?? 0));
+  const sorted = [...yours, ...competitors];
+
+  const rows = sorted.map(l => {
     const est = estMap[l.id];
     return `<tr>
-      <td><span class="badge ${l.is_target ? 'badge-target' : 'badge-comp'}">${l.is_target ? 'Target' : 'Comp'}</span></td>
+      <td><span class="badge ${l.isTarget ? 'badge-target' : 'badge-comp'}">${l.isTarget ? 'Yours' : 'Competitor'}</span></td>
       <td>${l.asin}</td>
       <td>${shortTitle(l.title, 50)}</td>
-      <td>$${(l.price ?? 0).toFixed(2)}</td>
+      <td>₹${(l.price ?? 0).toLocaleString()}</td>
       <td>#${(l.bsr ?? 0).toLocaleString()}</td>
-      <td>${(l.rating_avg ?? 0).toFixed(1)} ⭐ (${(l.rating_count ?? 0).toLocaleString()})</td>
-      <td>${est ? '$' + (est.revenue_per_month ?? 0).toLocaleString() : '—'}</td>
+      <td>${(l.ratingAvg ?? 0).toFixed(1)} ⭐ (${(l.ratingCount ?? 0).toLocaleString()})</td>
+      <td>${est ? '₹' + (est.revenuePerMonth ?? 0).toLocaleString() : '—'}</td>
     </tr>`;
   }).join('');
 

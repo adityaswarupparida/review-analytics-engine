@@ -45,6 +45,7 @@ export interface AmazonInReview {
   body: string | null;
   rating: number | null;
   date: string | null;
+  country: string | null;
   verified: boolean | null;
   helpfulVotes: number | null;
 }
@@ -166,12 +167,16 @@ export class AmazonInClient {
       const verifiedMatch = block.includes('data-hook="avp-badge"');
       const helpfulMatch = block.match(/(\d+) (?:people|person) found/);
 
+      const rawDateStr = dateMatch?.[1]?.trim() ?? null;
+      const { country, isoDate } = parseReviewDate(rawDateStr);
+
       reviews.push({
         reviewId: idMatch?.[1] ?? null,
         title: titleMatch?.[1]?.trim().replace(/<[^>]+>/g, "") ?? null,
         body: bodyMatch?.[1]?.trim().replace(/<br\s*\/?>/g, "\n").replace(/<[^>]+>/g, "") ?? null,
         rating: ratingMatch ? parseInt(ratingMatch[1]!) : null,
-        date: dateMatch?.[1]?.trim() ?? null,
+        date: isoDate,
+        country,
         verified: verifiedMatch,
         helpfulVotes: helpfulMatch ? parseInt(helpfulMatch[1]!) : null,
       });
@@ -262,10 +267,55 @@ export class AmazonInClient {
   }
 }
 
+// Countries that use MDY format (Month Day, Year)
+const MDY_COUNTRIES = new Set(["United States", "Canada"]);
+
+// Parse "Reviewed in India on 25 April 2026"
+// Returns { country, isoDate }
+function parseReviewDate(dateStr: string | null): { country: string | null; isoDate: string | null } {
+  if (!dateStr) return { country: null, isoDate: null };
+
+  // Extract country: "Reviewed in <country> on ..."
+  const countryMatch = dateStr.match(/Reviewed in (.+?) on /);
+  const country = countryMatch ? countryMatch[1]!.replace(/^the /, "") : null;
+
+  // Choose parse strategy based on country
+  const useMDY = country ? MDY_COUNTRIES.has(country) : false;
+
+  let isoDate: string | null = null;
+
+  if (useMDY) {
+    // Format: "December 5, 2025"
+    const m = dateStr.match(/(\w+)\s+(\d{1,2}),\s+(\d{4})/);
+    if (m) {
+      const d = new Date(`${m[1]} ${m[2]} ${m[3]}`);
+      if (!isNaN(d.getTime())) isoDate = d.toISOString().slice(0, 10);
+    }
+  } else {
+    // Format: "25 April 2026" or "25. April 2026" (German)
+    const m = dateStr.match(/(\d{1,2})\.?\s+(\w+)\s+(\d{4})/);
+    if (m) {
+      const d = new Date(`${m[2]} ${m[1]} ${m[3]}`);
+      if (!isNaN(d.getTime())) isoDate = d.toISOString().slice(0, 10);
+    }
+    // Fallback MDY
+    if (!isoDate) {
+      const m2 = dateStr.match(/(\w+)\s+(\d{1,2}),\s+(\d{4})/);
+      if (m2) {
+        const d = new Date(`${m2[1]} ${m2[2]} ${m2[3]}`);
+        if (!isNaN(d.getTime())) isoDate = d.toISOString().slice(0, 10);
+      }
+    }
+  }
+
+  return { country, isoDate };
+}
+
 export function normalizeAmazonInReview(
   raw: AmazonInReview,
   listingId: number
 ) {
+  const { country, isoDate } = parseReviewDate(raw.date);
   return {
     listingId,
     reviewId: raw.reviewId,
@@ -273,7 +323,8 @@ export function normalizeAmazonInReview(
     body: raw.body,
     rating: raw.rating,
     verified: raw.verified,
-    date: raw.date,
+    date: isoDate,
+    country: raw.country ?? country,
     helpfulVotes: raw.helpfulVotes,
   };
 }

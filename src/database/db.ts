@@ -93,6 +93,12 @@ export function initDb(): void {
 
     CREATE INDEX IF NOT EXISTS batch_listing_idx ON analysis_batches(listing_id);
   `);
+
+  // Migrations for existing DBs
+  const reviewCols = sqlite.query("PRAGMA table_info(reviews)").all() as { name: string }[];
+  if (!reviewCols.some((c) => c.name === "country")) {
+    sqlite.exec(`ALTER TABLE reviews ADD COLUMN country TEXT;`);
+  }
 }
 
 export function generateRunId(): string {
