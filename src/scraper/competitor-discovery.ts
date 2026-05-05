@@ -46,9 +46,9 @@ function toAbsoluteCategoryUrl(categoryLink: string): string | null {
     const url = new URL(categoryLink);
     return url.href;
   } catch {
-    // Relative URL — prepend amazon.com base
+    // Relative URL — prepend domain base
     if (categoryLink.startsWith("/")) {
-      return `https://www.amazon.com${categoryLink}`;
+      return `https://www.${config.AMAZON_DOMAIN}${categoryLink}`;
     }
     return null;
   }

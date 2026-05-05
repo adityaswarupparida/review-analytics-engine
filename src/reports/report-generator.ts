@@ -12,7 +12,7 @@ import {
 } from "../database/repository.js";
 import { config } from "../config.js";
 import { uploadToBlob } from "../../infra/azure-blob.js";
-import { sendReportEmail } from "../../infra/sendgrid.js";
+import { sendReportEmail } from "../../infra/resend.js";
 import type { Listing, RevenueEstimate, PurchaseCriterion } from "../database/schema.js";
 
 const eta = new Eta({

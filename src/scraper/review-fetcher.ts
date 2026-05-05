@@ -1,5 +1,4 @@
-import pLimit from "p-limit";
-import { RainforestClient, type RainforestReview } from "./rainforest-client.js";
+import { AmazonInClient, normalizeAmazonInReview } from "./amazon-client.js";
 import {
   getListingsByRun,
   bulkInsertReviews,
@@ -7,29 +6,9 @@ import {
   resolveRunId,
 } from "../database/repository.js";
 import { config } from "../config.js";
-import type { NewReview, Listing } from "../database/schema.js";
-
-function transformReview(raw: RainforestReview, listingId: number): NewReview {
-  return {
-    listingId,
-    reviewId: raw.id ?? null,
-    title: raw.title ?? null,
-    body: raw.body ?? null,
-    rating: raw.rating ?? null,
-    verified: raw.verified_purchase ?? null,
-    date: raw.date?.utc ?? raw.date?.raw ?? null,
-    helpfulVotes: raw.helpful_votes ?? null,
-  };
-}
 
 export class ReviewFetcher {
-  private client: RainforestClient;
-
-  constructor() {
-    this.client = new RainforestClient();
-  }
-
-  async scrapeAll(runId?: string, concurrency = 3): Promise<void> {
+  async scrapeAll(runId?: string): Promise<void> {
     const resolvedRunId = await resolveRunId(runId);
     const runListings = await getListingsByRun(resolvedRunId);
 
@@ -37,52 +16,53 @@ export class ReviewFetcher {
       throw new Error(`No listings found for run ${resolvedRunId}. Run discover first.`);
     }
 
-    console.log(`\n📥 Scraping reviews for ${runListings.length} listings in run ${resolvedRunId}...`);
+    console.log(`\n📥 Scraping reviews for ${runListings.length} listings`);
+    console.log(`   Max per listing: ${config.MAX_REVIEWS_PER_LISTING}`);
+    console.log(`   Source: amazon.in AJAX + session cookies\n`);
 
-    const limit = pLimit(concurrency);
-    await Promise.all(
-      runListings.map((listing) => limit(() => this.scrapeReviews(listing)))
-    );
-
-    console.log("\n✅ All reviews scraped.");
-  }
-
-  async scrapeReviews(listing: Listing): Promise<number> {
-    const existing = await countReviews(listing.id);
-    if (existing >= config.MAX_REVIEWS_PER_LISTING) {
-      console.log(`  ⏭ ${listing.asin}: already has ${existing} reviews, skipping`);
-      return existing;
+    let client: AmazonInClient;
+    try {
+      client = new AmazonInClient();
+    } catch (err) {
+      console.error(`❌ ${(err as Error).message}`);
+      return;
     }
 
-    const maxPages = Math.ceil((config.MAX_REVIEWS_PER_LISTING - existing) / 10);
-    let fetched = 0;
+    for (const listing of runListings) {
+      const existing = await countReviews(listing.id);
 
-    console.log(`\n  📄 ${listing.asin} (${listing.title?.slice(0, 40)})`);
+      if (existing >= config.MAX_REVIEWS_PER_LISTING) {
+        console.log(`  ⏭ ${listing.asin}: already has ${existing} reviews, skipping`);
+        continue;
+      }
 
-    for (let page = 1; page <= maxPages; page++) {
+      console.log(`\n  📦 ${listing.asin} — ${listing.title?.slice(0, 45)}`);
+      console.log(`     Have: ${existing} | Target: ${config.MAX_REVIEWS_PER_LISTING}`);
+
       try {
-        const response = await this.client.getReviews(listing.asin, page);
-        const rawReviews = response.reviews ?? [];
+        const rawReviews = await client.scrapeReviews(
+          listing.asin,
+          config.MAX_REVIEWS_PER_LISTING
+        );
 
         if (rawReviews.length === 0) {
-          console.log(`    Page ${page}: no more reviews`);
-          break;
+          console.log(`  ⚠ No reviews returned for ${listing.asin}`);
+          continue;
         }
 
-        const rows: NewReview[] = rawReviews.map((r) => transformReview(r, listing.id));
+        const rows = rawReviews.map((r) => normalizeAmazonInReview(r, listing.id));
         await bulkInsertReviews(rows);
-        fetched += rows.length;
-
-        console.log(`    Page ${page}: +${rows.length} (total: ${existing + fetched})`);
-
-        if (existing + fetched >= config.MAX_REVIEWS_PER_LISTING) break;
+        console.log(`  ✓ ${listing.asin}: saved ${rows.length} reviews`);
       } catch (err) {
-        console.error(`    ⚠ Error on page ${page}: ${(err as Error).message}`);
-        break;
+        const msg = (err as Error).message;
+        console.error(`  ⚠ ${listing.asin} failed: ${msg}`);
+        if (msg.includes("Session expired")) {
+          console.error("  Stopping — re-login required: bun run test/login-amazon-in.ts");
+          break;
+        }
       }
     }
 
-    console.log(`  ✓ ${listing.asin}: fetched ${fetched} new reviews`);
-    return existing + fetched;
+    console.log("\n✅ All reviews scraped.");
   }
 }

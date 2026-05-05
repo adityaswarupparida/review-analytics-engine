@@ -25,6 +25,7 @@ const envSchema = z.object({
   REPORT_EMAIL_FROM: z.string().email().optional(),
   TARGET_ASIN: z.string().min(10).max(10),
   AMAZON_CATEGORY: z.enum(AMAZON_CATEGORIES).default("electronics"),
+  AMAZON_DOMAIN: z.string().default("amazon.in"),
   BSR_CONSTANT_OVERRIDE: z.coerce.number().positive().optional(),
   DB_PATH: z.string().default("./data/reviews.db"),
   MAX_REVIEWS_PER_LISTING: z.coerce.number().default(1000),

@@ -7,6 +7,14 @@ program
   .description("Amazon review analytics engine");
 
 program
+  .command("login")
+  .description("Open browser for Amazon login — saves session to data/amazon-cookies.json")
+  .action(async () => {
+    const { loginToAmazon } = await import("./scraper/playwright-client.js");
+    await loginToAmazon();
+  });
+
+program
   .command("discover")
   .description("Fetch target listing + discover 9 competitors, creates a new run")
   .option("--asin <asin>", "Target ASIN (overrides TARGET_ASIN env var)")
@@ -29,7 +37,7 @@ program
   .action(async (opts) => {
     initDb();
     const { ReviewFetcher } = await import("./scraper/review-fetcher.js");
-    await new ReviewFetcher().scrapeAll(opts.run, parseInt(opts.concurrency, 10));
+    await new ReviewFetcher().scrapeAll(opts.run);
   });
 
 program

@@ -133,7 +133,7 @@ export class RainforestClient {
     url.searchParams.set("api_key", this.apiKey);
     // Skip amazon_domain when url param is present — the url itself defines the domain
     if (!params["url"]) {
-      url.searchParams.set("amazon_domain", "amazon.com");
+      url.searchParams.set("amazon_domain", config.AMAZON_DOMAIN);
     }
     for (const [k, v] of Object.entries(params)) {
       url.searchParams.set(k, v);
