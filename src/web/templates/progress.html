@@ -4,83 +4,148 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Running Analysis — Review Analytics</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Syne:wght@700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --bg: #0a0f1e; --surface: #111827; --surface2: #1a2236;
+      --border: #1f2d45; --accent: #0ea5e9; --accent-dim: #0c4a6e;
+      --text: #e2e8f0; --muted: #64748b;
+      --mono: 'JetBrains Mono', monospace; --sans: 'Inter', sans-serif; --display: 'Syne', sans-serif;
+    }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
-    header { background: #1e293b; border-bottom: 1px solid #334155; padding: 1rem 2rem; display: flex; align-items: center; justify-content: space-between; }
-    header h1 { font-size: 1.25rem; font-weight: 700; }
-    header a { font-size: 0.85rem; color: #64748b; text-decoration: none; }
-    header a:hover { color: #e2e8f0; }
-    main { max-width: 600px; margin: 0 auto; padding: 3rem 2rem; }
+    body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
 
-    .card { background: #1e293b; border: 1px solid #334155; border-radius: 0.75rem; padding: 2rem; }
-    .card-title { font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem; }
-    .card-sub { font-size: 0.85rem; color: #64748b; margin-bottom: 2rem; }
+    body::before {
+      content: ''; position: fixed; inset: 0;
+      background-image: radial-gradient(circle, #1e3a5a 1px, transparent 1px);
+      background-size: 32px 32px; opacity: 0.3; pointer-events: none; z-index: 0;
+    }
+    body::after {
+      content: ''; position: fixed; inset: 0;
+      background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(14,165,233,0.07) 0%, transparent 60%);
+      pointer-events: none; z-index: 0;
+    }
+
+    header {
+      position: relative; z-index: 10;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 2.5rem; border-bottom: 1px solid var(--border);
+      background: rgba(10,15,30,0.85); backdrop-filter: blur(12px);
+    }
+    .logo { display: flex; align-items: center; gap: 0.6rem; }
+    .logo-text { font-family: var(--display); font-size: 1rem; font-weight: 700; letter-spacing: -0.02em; }
+    .header-tag {
+      font-family: var(--mono); font-size: 0.68rem; color: var(--accent);
+      background: var(--accent-dim); border: 1px solid rgba(14,165,233,0.3);
+      padding: 0.2rem 0.6rem; border-radius: 4px; letter-spacing: 0.06em;
+    }
+    header a { font-family: var(--mono); font-size: 0.72rem; color: var(--muted); text-decoration: none; letter-spacing: 0.04em; transition: color 0.15s; }
+    header a:hover { color: var(--accent); }
+
+    main { position: relative; z-index: 1; max-width: 600px; margin: 0 auto; padding: 3rem 2rem; }
+
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; overflow: hidden;
+    }
+    .card-header {
+      display: flex; align-items: center; gap: 0.75rem;
+      padding: 0.875rem 1.5rem; border-bottom: 1px solid var(--border);
+      background: var(--surface2);
+    }
+    .traffic-lights { display: flex; gap: 6px; }
+    .traffic-lights span { width: 10px; height: 10px; border-radius: 50%; }
+    .tl-r { background: #ff5f57; } .tl-y { background: #febc2e; } .tl-g { background: #28c840; }
+    .card-header-title { font-family: var(--mono); font-size: 0.72rem; color: var(--muted); letter-spacing: 0.05em; }
+    .card-body { padding: 2rem; }
+
+    .card-title { font-family: var(--display); font-size: 1.1rem; font-weight: 700; margin-bottom: 0.4rem; }
+    .card-sub { font-family: var(--mono); font-size: 0.75rem; color: var(--muted); margin-bottom: 2rem; letter-spacing: 0.04em; }
 
     .steps { display: flex; flex-direction: column; gap: 0; }
-    .step { display: flex; align-items: flex-start; gap: 1rem; padding: 0.875rem 0; position: relative; }
+    .step { display: flex; align-items: center; gap: 1rem; padding: 0.875rem 0; position: relative; }
     .step:not(:last-child)::after {
-      content: ''; position: absolute; left: 1.1rem; top: 2.5rem;
-      width: 2px; height: calc(100% - 1rem); background: #334155;
+      content: ''; position: absolute; left: 1.1rem; top: calc(50% + 1.125rem);
+      width: 2px; height: calc(50% - 0.25rem); background: var(--border);
     }
     .step.done::after { background: #10b981; }
 
     .icon {
       width: 2.25rem; height: 2.25rem; border-radius: 9999px; display: flex;
       align-items: center; justify-content: center; font-size: 0.9rem;
-      flex-shrink: 0; z-index: 1; border: 2px solid #334155; background: #0f172a;
+      flex-shrink: 0; z-index: 1; border: 2px solid var(--border); background: var(--bg);
+      font-family: var(--mono); line-height: 1;
     }
-    .step.pending .icon  { color: #475569; border-color: #334155; }
-    .step.running .icon  { color: #0ea5e9; border-color: #0ea5e9; animation: pulse 1.5s ease-in-out infinite; }
-    .step.done .icon    { color: #10b981; border-color: #10b981; background: #064e3b; }
-    .step.error .icon   { color: #f87171; border-color: #f87171; background: #450a0a; }
+    .step.pending .icon { color: #334155; border-color: var(--border); }
+    .step.running .icon { color: var(--accent); border-color: var(--accent); animation: pulse 1.5s ease-in-out infinite; }
+    .step.done .icon    { color: #10b981; border-color: #10b981; background: #052e16; }
+    .step.error .icon   { color: #f87171; border-color: #f87171; background: #2d0a0a; }
 
     @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(14,165,233,0.4); } 50% { box-shadow: 0 0 0 6px rgba(14,165,233,0); } }
 
-    .step-body { flex: 1; padding-top: 0.35rem; }
-    .step-label { font-size: 0.9rem; font-weight: 500; }
-    .step.pending .step-label  { color: #475569; }
-    .step.running .step-label  { color: #e2e8f0; }
-    .step.done .step-label    { color: #6ee7b7; }
+    .step-body { flex: 1; }
+    .step-label { font-size: 0.875rem; font-weight: 500; }
+    .step.pending .step-label { color: #334155; }
+    .step.running .step-label { color: var(--text); font-weight: 600; }
+    .step.done .step-label    { color: #4ade80; }
     .step.error .step-label   { color: #f87171; }
-    .step-msg { font-size: 0.8rem; color: #64748b; margin-top: 0.2rem; }
+    .step-msg { font-family: var(--mono); font-size: 0.72rem; color: var(--muted); margin-top: 0.2rem; letter-spacing: 0.03em; }
     .step.error .step-msg { color: #fca5a5; }
 
     .done-banner {
-      display: none; margin-top: 2rem; padding: 1rem 1.25rem; background: #064e3b;
-      border: 1px solid #10b981; border-radius: 0.5rem; text-align: center;
+      display: none; margin-top: 2rem; padding: 1.25rem;
+      background: #052e16; border: 1px solid #166534; border-radius: 8px; text-align: center;
     }
-    .done-banner p { color: #6ee7b7; font-size: 0.9rem; margin-bottom: 0.75rem; }
+    .done-banner p { color: #4ade80; font-size: 0.9rem; margin-bottom: 0.75rem; }
     .btn-primary {
-      display: inline-block; padding: 0.625rem 1.5rem; background: #0ea5e9; color: #fff;
-      text-decoration: none; border-radius: 0.5rem; font-size: 0.9rem; font-weight: 600;
+      display: inline-block; padding: 0.7rem 1.75rem;
+      background: var(--accent); color: #fff;
+      text-decoration: none; border-radius: 7px;
+      font-family: var(--display); font-size: 0.9rem; font-weight: 700;
+      transition: all 0.15s;
     }
-    .btn-primary:hover { background: #0284c7; }
+    .btn-primary:hover { background: #0284c7; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(14,165,233,0.25); }
 
     .error-banner {
-      display: none; margin-top: 2rem; padding: 1.25rem; background: #450a0a;
-      border: 1px solid #f87171; border-radius: 0.5rem;
+      display: none; margin-top: 2rem; padding: 1.25rem;
+      background: #2d0a0a; border: 1px solid #7f1d1d; border-radius: 8px;
     }
     .error-title { color: #fca5a5; font-size: 0.95rem; font-weight: 600; margin-bottom: 0.4rem; }
-    .error-detail { color: #fca5a5; font-size: 0.85rem; opacity: 0.8; margin-bottom: 0.3rem; }
-    .error-action { color: #fde68a; font-size: 0.82rem; margin-bottom: 1rem; }
-    .error-raw { font-size: 0.75rem; color: #7f1d1d; background: #3b0a0a; padding: 0.5rem 0.75rem; border-radius: 0.375rem; margin-bottom: 1rem; font-family: monospace; word-break: break-all; }
+    .error-detail { color: #fca5a5; font-size: 0.82rem; opacity: 0.8; margin-bottom: 0.3rem; }
+    .error-action { color: #fde68a; font-family: var(--mono); font-size: 0.75rem; margin-bottom: 1rem; }
+    .error-raw { font-family: var(--mono); font-size: 0.7rem; color: #7f1d1d; background: #1a0505; padding: 0.5rem 0.75rem; border-radius: 6px; margin-bottom: 1rem; word-break: break-all; }
     .btn-secondary {
-      display: inline-block; padding: 0.625rem 1.5rem; background: #1e293b; color: #e2e8f0;
-      text-decoration: none; border-radius: 0.5rem; font-size: 0.9rem; font-weight: 600;
-      border: 1px solid #334155; margin-right: 0.5rem;
+      display: inline-block; padding: 0.625rem 1.5rem;
+      background: var(--surface2); color: var(--text);
+      text-decoration: none; border-radius: 7px; font-size: 0.875rem; font-weight: 600;
+      border: 1px solid var(--border); margin-right: 0.5rem; transition: border-color 0.15s;
     }
+    .btn-secondary:hover { border-color: #475569; }
+
+    @keyframes fadeUp { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
+    .card { animation: fadeUp 0.4s ease both; }
   </style>
 </head>
 <body>
   <header>
-    <h1>📊 Review Analytics</h1>
-    <a href="/">← Back to Home</a>
+    <div class="logo">
+      <span style="font-size:1.1rem">📊</span>
+      <span class="logo-text">Review Analytics</span>
+    </div>
+    <a href="/">← back to home</a>
   </header>
   <main>
     <div class="card">
+      <div class="card-header">
+        <div class="traffic-lights">
+          <span class="tl-r"></span><span class="tl-y"></span><span class="tl-g"></span>
+        </div>
+        <span class="card-header-title">pipeline.run</span>
+      </div>
+      <div class="card-body">
       <div class="card-title">Running Analysis</div>
-      <div class="card-sub" id="subtitle">Starting pipeline...</div>
+      <div class="card-sub" id="subtitle">// starting pipeline...</div>
 
       <div class="steps" id="steps">
         <!-- Injected by JS -->
@@ -98,6 +163,7 @@
         <div class="error-raw" id="errorRaw"></div>
         <a class="btn-secondary" id="retryBtn" href="/">← Start Over</a>
       </div>
+      </div><!-- card-body -->
     </div>
   </main>
 
@@ -156,7 +222,7 @@ evtSource.onmessage = (e) => {
 
   // Update subtitle
   if (ev.status === 'running') {
-    document.getElementById('subtitle').textContent = ev.message ?? 'Processing...';
+    document.getElementById('subtitle').textContent = '// ' + (ev.message ?? 'Processing...');
   }
 
   // Done

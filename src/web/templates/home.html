@@ -3,147 +3,283 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Review Analytics</title>
+  <title>Review Analytics — Amazon Product Intelligence</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --bg: #0a0f1e;
+      --surface: #111827;
+      --surface2: #1a2236;
+      --border: #1f2d45;
+      --border-lit: #2d4a6e;
+      --accent: #0ea5e9;
+      --accent-dim: #0c4a6e;
+      --accent-glow: rgba(14,165,233,0.15);
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --mono: 'JetBrains Mono', monospace;
+      --sans: 'Inter', sans-serif;
+      --display: 'Syne', sans-serif;
+    }
+
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: radial-gradient(circle, #1e3a5a 1px, transparent 1px);
+      background-size: 32px 32px;
+      opacity: 0.3;
+      pointer-events: none; z-index: 0;
+    }
+
+    body::after {
+      content: '';
+      position: fixed; inset: 0;
+      background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(14,165,233,0.07) 0%, transparent 60%);
+      pointer-events: none; z-index: 0;
+    }
 
     header {
-      background: #1e293b; border-bottom: 1px solid #334155;
-      padding: 1rem 2rem; display: flex; align-items: center; justify-content: space-between;
+      position: relative; z-index: 10;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 2.5rem;
+      border-bottom: 1px solid var(--border);
+      background: rgba(10,15,30,0.85);
+      backdrop-filter: blur(12px);
     }
-    header h1 { font-size: 1.25rem; font-weight: 700; }
-    header span { font-size: 0.8rem; color: #64748b; }
+    .logo { display: flex; align-items: center; gap: 0.6rem; }
+    .logo-mark {
+      font-size: 1.1rem;
+      line-height: 1;
+    }
+    .logo-text { font-family: var(--display); font-size: 1rem; font-weight: 700; letter-spacing: -0.02em; }
+    .header-tag {
+      font-family: var(--mono); font-size: 0.68rem; color: var(--accent);
+      background: var(--accent-dim); border: 1px solid rgba(14,165,233,0.3);
+      padding: 0.2rem 0.6rem; border-radius: 4px; letter-spacing: 0.06em;
+    }
 
-    main { max-width: 860px; margin: 0 auto; padding: 3rem 2rem; }
+    main {
+      position: relative; z-index: 1;
+      max-width: 900px; margin: 0 auto; padding: 4rem 2rem 3rem;
+    }
 
     /* Hero */
-    .hero { text-align: center; margin-bottom: 2.5rem; }
-    .hero-badge {
-      display: inline-block; background: #0c4a6e; color: #38bdf8;
-      font-size: 0.75rem; font-weight: 600; padding: 0.25rem 0.75rem;
-      border-radius: 9999px; border: 1px solid #0ea5e9; margin-bottom: 1rem;
+    .hero { margin-bottom: 3rem; }
+    .hero-eyebrow {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      font-family: var(--mono); font-size: 0.68rem; color: var(--accent);
+      letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 1.25rem;
     }
-    .hero h2 { font-size: 2rem; font-weight: 800; margin-bottom: 0.75rem; line-height: 1.2; }
-    .hero h2 span { color: #38bdf8; }
-    .hero p { color: #94a3b8; font-size: 0.95rem; max-width: 480px; margin: 0 auto; }
+    .hero-eyebrow::before { content: ''; display: block; width: 20px; height: 1px; background: var(--accent); }
+    .hero h1 {
+      font-family: var(--display); font-size: clamp(2.2rem, 5vw, 3rem);
+      font-weight: 800; line-height: 1.1; letter-spacing: -0.03em; margin-bottom: 1rem;
+    }
+    .hero h1 em {
+      font-style: normal;
+      background: linear-gradient(90deg, var(--accent), #38bdf8, #7dd3fc);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .hero-sub { font-size: 0.95rem; color: var(--muted); max-width: 480px; line-height: 1.65; }
 
-    /* Stats row */
-    .stats { display: flex; gap: 1rem; justify-content: center; margin-bottom: 2.5rem; }
-    .stat { text-align: center; padding: 0.75rem 1.5rem; background: #1e293b; border: 1px solid #334155; border-radius: 0.5rem; }
-    .stat-val { font-size: 1.25rem; font-weight: 700; color: #38bdf8; }
-    .stat-lbl { font-size: 0.75rem; color: #64748b; margin-top: 0.1rem; }
+    /* Metrics */
+    .metrics {
+      display: flex; gap: 0; margin-bottom: 2.5rem;
+      border: 1px solid var(--border); border-radius: 10px;
+      overflow: hidden; background: var(--surface);
+    }
+    .metric { flex: 1; padding: 1rem 1.25rem; text-align: center; border-right: 1px solid var(--border); }
+    .metric:last-child { border-right: none; }
+    .metric-val { font-family: var(--mono); font-size: 1.3rem; font-weight: 700; color: var(--accent); display: block; line-height: 1; }
+    .metric-lbl { font-size: 0.68rem; color: var(--muted); margin-top: 0.35rem; text-transform: uppercase; letter-spacing: 0.06em; }
 
-    /* Card */
-    .card { background: #1e293b; border: 1px solid #334155; border-radius: 0.75rem; padding: 1.75rem; margin-bottom: 1.5rem; }
-    .card-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.25rem; }
-    .card-header h3 { font-size: 0.95rem; font-weight: 600; }
-    .card-header .dot { width: 8px; height: 8px; border-radius: 9999px; background: #0ea5e9; }
+    /* Analysis card */
+    .analysis-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; overflow: hidden; margin-bottom: 2.5rem;
+    }
+    .card-header {
+      display: flex; align-items: center; gap: 0.75rem;
+      padding: 0.875rem 1.5rem; border-bottom: 1px solid var(--border);
+      background: var(--surface2);
+    }
+    .traffic-lights { display: flex; gap: 6px; }
+    .traffic-lights span { width: 10px; height: 10px; border-radius: 50%; }
+    .tl-r { background: #ff5f57; } .tl-y { background: #febc2e; } .tl-g { background: #28c840; }
+    .card-header-title { font-family: var(--mono); font-size: 0.72rem; color: var(--muted); letter-spacing: 0.05em; }
+    .card-body { padding: 1.75rem; }
 
     /* Form */
-    .form-row { display: flex; gap: 0.75rem; margin-bottom: 0.75rem; }
-    .form-row-full { display: flex; gap: 0.75rem; }
-    label { display: block; font-size: 0.75rem; color: #64748b; margin-bottom: 0.3rem; font-weight: 500; letter-spacing: 0.03em; text-transform: uppercase; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+    .field { display: flex; flex-direction: column; gap: 0.4rem; }
+    .field-full { grid-column: 1 / -1; }
 
-    input[type="text"], input[type="email"], select {
-      width: 100%; padding: 0.65rem 1rem; background: #0f172a;
-      border: 1px solid #334155; border-radius: 0.5rem; color: #e2e8f0;
-      font-size: 0.9rem; outline: none; transition: border-color 0.15s;
+    label { font-size: 0.68rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+    label .opt { color: #64748b; font-weight: 400; text-transform: none; letter-spacing: 0; font-size: 0.7rem; }
+
+    input[type="text"], input[type="email"] {
+      font-family: var(--mono); font-size: 0.88rem;
+      padding: 0.7rem 1rem; background: #0a0f1e;
+      border: 1px solid var(--border); border-radius: 7px;
+      color: var(--text); outline: none; transition: all 0.15s; letter-spacing: 0.04em;
     }
-    input:focus, select:focus { border-color: #0ea5e9; box-shadow: 0 0 0 3px rgba(14,165,233,0.1); }
-    input::placeholder { color: #475569; }
+    input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+    input::placeholder { color: #2d3f56; }
 
-    .btn-primary {
-      width: 100%; padding: 0.75rem; background: #0ea5e9; color: #fff;
-      border: none; border-radius: 0.5rem; font-size: 0.9rem; font-weight: 700;
-      cursor: pointer; transition: background 0.15s; letter-spacing: 0.02em;
+    select {
+      font-family: var(--sans); font-size: 0.875rem;
+      padding: 0.7rem 1rem; background: #0a0f1e;
+      border: 1px solid var(--border); border-radius: 7px;
+      color: var(--text); outline: none; width: 100%; transition: all 0.15s;
+      appearance: none; cursor: pointer;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%2364748b' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 12px center;
     }
-    .btn-primary:hover { background: #0284c7; }
-    .btn-primary:disabled { background: #1e3a5f; color: #64748b; cursor: not-allowed; }
+    select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
 
-    .hint { font-size: 0.78rem; color: #475569; margin-top: 0.4rem; }
-    .error { color: #f87171; font-size: 0.82rem; margin-top: 0.5rem; display: none; }
+    .field-hint { font-family: var(--mono); font-size: 0.67rem; color: #475569; margin-top: 0.3rem; }
+
+    .btn-run {
+      width: 100%; margin-top: 0.25rem;
+      padding: 0.85rem 1rem;
+      background: var(--accent); color: #fff; border: none;
+      border-radius: 8px; font-family: var(--display); font-size: 0.95rem;
+      font-weight: 700; letter-spacing: 0.02em; cursor: pointer;
+      transition: all 0.15s; position: relative; overflow: hidden;
+    }
+    .btn-run::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+      transform: translateX(-100%); transition: transform 0.4s;
+    }
+    .btn-run:hover::after { transform: translateX(100%); }
+    .btn-run:hover { background: #0284c7; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(14,165,233,0.25); }
+    .btn-run:disabled { background: #1a2a40; color: #334155; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    .error { color: #f87171; font-family: var(--mono); font-size: 0.72rem; margin-top: 0.6rem; display: none; }
 
     /* Past runs */
-    .section-title { font-size: 0.75rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem; }
-    .runs-list { display: flex; flex-direction: column; gap: 0.6rem; }
+    .section-label { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
+    .section-label h3 { font-size: 0.68rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; white-space: nowrap; }
+    .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    .runs-list { display: flex; flex-direction: column; gap: 0.5rem; }
+
     .run-item {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 0.875rem 1rem; background: #0f172a; border: 1px solid #1e293b;
-      border-radius: 0.5rem; text-decoration: none; color: #e2e8f0;
-      transition: border-color 0.15s, background 0.15s;
+      padding: 0.875rem 1.25rem;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; text-decoration: none; color: var(--text);
+      transition: all 0.15s;
     }
-    .run-item:hover { border-color: #0ea5e9; background: #0c1829; }
-    .run-left { display: flex; flex-direction: column; gap: 0.2rem; }
-    .run-asin { font-weight: 600; font-size: 0.875rem; font-family: monospace; color: #38bdf8; }
-    .run-info { font-size: 0.75rem; color: #475569; }
+    .run-item:hover { border-color: var(--border-lit); background: var(--surface2); transform: translateX(3px); }
+    .run-left { display: flex; align-items: center; gap: 1.25rem; }
+    .run-asin { font-family: var(--mono); font-size: 0.85rem; font-weight: 600; color: var(--accent); letter-spacing: 0.06em; min-width: 105px; }
+    .run-meta { display: flex; flex-direction: column; gap: 0.15rem; }
+    .run-date { font-size: 0.75rem; color: var(--muted); }
+    .run-cat { font-size: 0.68rem; color: #334155; text-transform: capitalize; }
     .run-right { display: flex; align-items: center; gap: 0.75rem; }
-    .status { font-size: 0.7rem; padding: 0.2rem 0.6rem; border-radius: 9999px; font-weight: 600; }
-    .status-complete { background: #064e3b; color: #6ee7b7; }
-    .status-running  { background: #1e3a5f; color: #93c5fd; }
-    .status-error    { background: #450a0a; color: #fca5a5; }
-    .status-other    { background: #1e293b; color: #64748b; }
-    .arrow { color: #334155; font-size: 0.9rem; }
-    .empty { color: #334155; text-align: center; padding: 2rem; font-size: 0.85rem; border: 1px dashed #1e293b; border-radius: 0.5rem; }
+    .pill { font-family: var(--mono); font-size: 0.63rem; font-weight: 600; padding: 0.2rem 0.55rem; border-radius: 4px; letter-spacing: 0.05em; text-transform: uppercase; }
+    .pill-complete { background: #052e16; color: #4ade80; border: 1px solid #166534; }
+    .pill-running  { background: #0c1f3a; color: #60a5fa; border: 1px solid #1e40af; }
+    .pill-error    { background: #2d0a0a; color: #f87171; border: 1px solid #7f1d1d; }
+    .pill-other    { background: #111827; color: #475569; border: 1px solid #1f2937; }
+    .run-arrow { color: var(--border-lit); font-size: 0.85rem; transition: all 0.15s; }
+    .run-item:hover .run-arrow { transform: translateX(3px); color: var(--accent); }
+
+    .empty-state { text-align: center; padding: 2.5rem; border: 1px dashed var(--border); border-radius: 8px; color: var(--muted); font-size: 0.82rem; font-family: var(--mono); }
+
+    @keyframes fadeUp { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
+    .hero         { animation: fadeUp 0.5s ease both; }
+    .metrics      { animation: fadeUp 0.5s 0.08s ease both; }
+    .analysis-card{ animation: fadeUp 0.5s 0.16s ease both; }
+    .section-label, .runs-list { animation: fadeUp 0.5s 0.24s ease both; }
+
+    @media (max-width: 640px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .metrics { flex-wrap: wrap; }
+      .metric { flex: 1 1 45%; }
+      header { padding: 1rem 1.25rem; }
+      main { padding: 2.5rem 1.25rem 2rem; }
+    }
   </style>
 </head>
 <body>
   <header>
-    <h1>📊 Review Analytics</h1>
-    <span>Amazon Product Intelligence</span>
+    <div class="logo">
+      <div class="logo-mark">📊</div>
+      <span class="logo-text">Review Analytics</span>
+    </div>
+    <span class="header-tag">AMAZON INTELLIGENCE</span>
   </header>
+
   <main>
     <div class="hero">
-      <div class="hero-badge">Powered by Claude AI</div>
-      <h2>Analyse Your <span>Amazon Listing</span></h2>
-      <p>Discover competitors, scrape reviews and get AI-powered purchase criteria insights in minutes</p>
+      <div class="hero-eyebrow">Product Analysis Engine</div>
+      <h1>Know your market<br>before <em>they do</em></h1>
+      <p class="hero-sub">Enter your ASIN to discover competitors, scrape hundreds of reviews, and surface AI-powered purchase criteria insights.</p>
     </div>
 
-    <!-- New Analysis -->
-    <div class="card">
+    <!-- <div class="metrics">
+      <div class="metric"><span class="metric-val">10</span><div class="metric-lbl">Competitors</div></div>
+      <div class="metric"><span class="metric-val">100+</span><div class="metric-lbl">Reviews / Listing</div></div>
+      <div class="metric"><span class="metric-val">Claude AI</span><div class="metric-lbl">NLP Engine</div></div>
+      <div class="metric"><span class="metric-val">Live ₹</span><div class="metric-lbl">Revenue Estimates</div></div>
+    </div> -->
+
+    <div class="analysis-card">
       <div class="card-header">
-        <div class="dot"></div>
-        <h3>Start New Analysis</h3>
-      </div>
-
-      <div class="form-row">
-        <div style="flex:1">
-          <label>Product ASIN</label>
-          <input type="text" id="asin" placeholder="e.g. B0DCZ9PRCP" maxlength="10"/>
+        <div class="traffic-lights">
+          <span class="tl-r"></span><span class="tl-y"></span><span class="tl-g"></span>
         </div>
-        <div style="flex:1">
-          <label>Category</label>
-          <select id="category">
-            <option value="electronics">Electronics</option>
-            <option value="home_kitchen">Home & Kitchen</option>
-            <option value="sports_outdoors">Sports & Outdoors</option>
-            <option value="tools_home_improvement">Tools & Home Improvement</option>
-            <option value="toys_games">Toys & Games</option>
-            <option value="beauty_personal_care">Beauty & Personal Care</option>
-            <option value="health_household">Health & Household</option>
-            <option value="clothing_shoes">Clothing & Shoes</option>
-            <option value="office_products">Office Products</option>
-            <option value="pet_supplies">Pet Supplies</option>
-          </select>
+        <span class="card-header-title">new_analysis.run</span>
+      </div>
+      <div class="card-body">
+        <div class="form-grid">
+          <div class="field">
+            <label>Product ASIN</label>
+            <input type="text" id="asin" placeholder="B0DCZ9PRCP" maxlength="10"/>
+          </div>
+          <div class="field">
+            <label>Category</label>
+            <select id="category">
+              <option value="electronics">Electronics</option>
+              <option value="home_kitchen">Home & Kitchen</option>
+              <option value="sports_outdoors">Sports & Outdoors</option>
+              <option value="tools_home_improvement">Tools & Home Improvement</option>
+              <option value="toys_games">Toys & Games</option>
+              <option value="beauty_personal_care">Beauty & Personal Care</option>
+              <option value="health_household">Health & Household</option>
+              <option value="clothing_shoes">Clothing & Shoes</option>
+              <option value="office_products">Office Products</option>
+              <option value="pet_supplies">Pet Supplies</option>
+            </select>
+          </div>
+          <div class="field field-full">
+            <label>Email <span class="opt">— optional, receive full report when done</span></label>
+            <input type="email" id="email" placeholder="you@company.com"/>
+            <div class="field-hint">// leave blank to skip. report always available on dashboard.</div>
+          </div>
         </div>
+        <button class="btn-run" id="startBtn" onclick="startAnalysis()">Run Analysis →</button>
+        <div class="error" id="err"></div>
       </div>
-
-      <div style="margin-bottom:1rem">
-        <label>Email for Report <span style="color:#334155;font-weight:400;text-transform:none">(optional)</span></label>
-        <input type="email" id="email" placeholder="you@example.com — receive the full report when done"/>
-        <div class="hint">Leave blank to skip email. Report is always available on the dashboard.</div>
-      </div>
-
-      <button class="btn-primary" id="startBtn" onclick="startAnalysis()">🚀 Start Analysis</button>
-      <div class="error" id="err"></div>
     </div>
 
-    <!-- Past Runs -->
-    <div>
-      <div class="section-title">Past Runs</div>
-      <div id="runsList" class="runs-list">
-        <div class="empty">Loading past runs...</div>
-      </div>
+    <div class="section-label"><h3>Past Runs</h3></div>
+    <div id="runsList" class="runs-list">
+      <div class="empty-state">Loading runs...</div>
     </div>
   </main>
 
@@ -152,26 +288,28 @@ async function loadRuns() {
   const res = await fetch('/api/runs');
   const { runs } = await res.json();
   const el = document.getElementById('runsList');
-
   if (!runs.length) {
-    el.innerHTML = '<div class="empty">No past runs yet. Start your first analysis above.</div>';
+    el.innerHTML = '<div class="empty-state">No past runs yet — start your first analysis above.</div>';
     return;
   }
-
   el.innerHTML = runs.map(r => {
-    const statusClass = r.status === 'complete' ? 'complete' : r.status === 'error' ? 'error' : r.status === 'scraping' || r.status === 'analyzing' || r.status === 'discovering' ? 'running' : 'other';
-    const date = new Date(r.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
-    return `
-      <a class="run-item" href="/dashboard?run=${r.id}">
-        <div class="run-left">
-          <span class="run-asin">${r.targetAsin}</span>
-          <span class="run-info">${date} · ${r.category.replace(/_/g, ' ')}</span>
+    const sc = r.status === 'complete' ? 'complete' : r.status === 'error' ? 'error' : (r.status && r.status !== 'discovering') ? 'running' : 'other';
+    const d = new Date(r.createdAt);
+    const date = d.toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' });
+    const time = d.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' });
+    return `<a class="run-item" href="/dashboard?run=${r.id}">
+      <div class="run-left">
+        <span class="run-asin">${r.targetAsin}</span>
+        <div class="run-meta">
+          <span class="run-date">${date} at ${time}</span>
+          <span class="run-cat">${r.category.replace(/_/g,' ')}</span>
         </div>
-        <div class="run-right">
-          <span class="status status-${statusClass}">${r.status}</span>
-          <span class="arrow">→</span>
-        </div>
-      </a>`;
+      </div>
+      <div class="run-right">
+        <span class="pill pill-${sc}">${r.status}</span>
+        <span class="run-arrow">›</span>
+      </div>
+    </a>`;
   }).join('');
 }
 
@@ -181,41 +319,25 @@ async function startAnalysis() {
   const email = document.getElementById('email').value.trim();
   const err = document.getElementById('err');
   const btn = document.getElementById('startBtn');
-
   err.style.display = 'none';
-
   if (!asin || asin.length !== 10) {
-    err.textContent = 'Please enter a valid 10-character ASIN';
-    err.style.display = 'block';
-    return;
+    err.textContent = '// error: ASIN must be exactly 10 characters';
+    err.style.display = 'block'; return;
   }
-
-  btn.disabled = true;
-  btn.textContent = 'Starting...';
-
+  btn.disabled = true; btn.textContent = 'Initialising...';
   const res = await fetch('/api/run', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ asin, category, email: email || undefined }),
   });
-
   const data = await res.json();
-
   if (!res.ok) {
-    err.textContent = data.error ?? 'Failed to start analysis';
-    err.style.display = 'block';
-    btn.disabled = false;
-    btn.textContent = '🚀 Start Analysis';
-    return;
+    err.textContent = `// error: ${data.error ?? 'Failed to start'}`;
+    err.style.display = 'block'; btn.disabled = false; btn.textContent = 'Run Analysis →'; return;
   }
-
   window.location.href = `/progress?jobId=${data.jobId}`;
 }
 
-document.getElementById('asin').addEventListener('keydown', e => {
-  if (e.key === 'Enter') startAnalysis();
-});
-
+document.getElementById('asin').addEventListener('keydown', e => { if (e.key === 'Enter') startAnalysis(); });
 loadRuns();
 </script>
 </body>

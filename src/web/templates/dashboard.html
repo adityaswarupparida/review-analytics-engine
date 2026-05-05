@@ -22,7 +22,7 @@
     td:nth-child(2), td:nth-child(3) { text-align: left; }
     tr:hover td { background: #0f172a; }
     .badge { display: inline-block; padding: 0.125rem 0.5rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
-    .badge-target { background: #10b981; color: #fff; }
+    .badge-target { background: #0c4a6e; color: #38bdf8; border: 1px solid rgba(14,165,233,0.3); }
     .badge-comp { background: #334155; color: #94a3b8; }
     .loading { color: #475569; text-align: center; padding: 2rem; }
     @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
@@ -73,8 +73,12 @@ const COLORS = [
   '#06b6d4','#84cc16','#fb923c','#a78bfa','#34d399',
 ];
 
+// Read run ID from URL ?run=... and append to all API calls
+const RUN_PARAM = new URLSearchParams(location.search).get('run');
+const withRun = url => RUN_PARAM ? `${url}${url.includes('?') ? '&' : '?'}run=${RUN_PARAM}` : url;
+
 async function fetchJson(url) {
-  const res = await fetch(url);
+  const res = await fetch(withRun(url));
   return res.json();
 }
 

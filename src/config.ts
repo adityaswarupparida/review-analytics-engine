@@ -16,7 +16,7 @@ const AMAZON_CATEGORIES = [
 export type AmazonCategory = (typeof AMAZON_CATEGORIES)[number];
 
 const envSchema = z.object({
-  RAINFOREST_API_KEY: z.string().min(1),
+  SCRAPER_API_KEY: z.string().min(1),
   ANTHROPIC_API_KEY: z.string().min(1),
   AZURE_STORAGE_CONNECTION_STRING: z.string().min(1),
   AZURE_STORAGE_CONTAINER: z.string().default("review-analytics"),
@@ -28,7 +28,6 @@ const envSchema = z.object({
   BSR_CONSTANT_OVERRIDE: z.coerce.number().positive().optional(),
   DB_PATH: z.string().default("./data/reviews.db"),
   MAX_REVIEWS_PER_LISTING: z.coerce.number().default(1000),
-  RAINFOREST_RATE_LIMIT: z.coerce.number().default(10),
 });
 
 function loadConfig() {

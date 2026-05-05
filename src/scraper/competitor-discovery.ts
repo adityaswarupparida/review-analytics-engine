@@ -1,11 +1,8 @@
-import {
-  RainforestClient,
-  type RainforestProduct,
-  type RainforestBestseller,
-} from "./rainforest-client.js";
+import { ScraperAPIClient } from "./scraper-api-client.js";
+import type { AmazonProduct } from "./types.js";
 import { createRun, updateRunStatus, insertListing, getListingsByRun } from "../database/repository.js";
 import { generateRunId } from "../database/db.js";
-import { config, type AmazonCategory } from "../config.js";
+import { type AmazonCategory } from "../config.js";
 import type { NewListing } from "../database/schema.js";
 
 // Keywords that indicate an accessory, not a product
@@ -21,54 +18,35 @@ function isAccessory(title: string): boolean {
   return ACCESSORY_KEYWORDS.some((kw) => lower.includes(kw));
 }
 
-// Extract review count — Rainforest uses different fields for different product types
-function extractReviewCount(product: RainforestProduct | RainforestBestseller): number {
-  return (
-    ("ratings_total" in product ? product.ratings_total : undefined) ??
-    ("reviews_total" in product ? (product as RainforestProduct).reviews_total : undefined) ??
-    0
-  );
+function extractReviewCount(product: AmazonProduct): number {
+  return product.ratings_total ?? product.reviews_total ?? 0;
 }
 
-function extractBsr(product: RainforestProduct): number | null {
+function extractBsr(product: AmazonProduct): number | null {
   return product.bestsellers_rank?.[0]?.rank ?? null;
 }
 
-function extractBsrCategory(product: RainforestProduct): string | null {
+function extractBsrCategory(product: AmazonProduct): string | null {
   return product.bestsellers_rank?.[0]?.category ?? null;
 }
 
-// Ensure we have a usable category URL for the bestsellers endpoint.
-// Rainforest accepts any Amazon category URL — browse or bestsellers format.
-// We only need to ensure it's an absolute URL.
-function toAbsoluteCategoryUrl(categoryLink: string): string | null {
-  try {
-    const url = new URL(categoryLink);
-    return url.href;
-  } catch {
-    // Relative URL — prepend domain base
-    if (categoryLink.startsWith("/")) {
-      return `https://www.${config.AMAZON_DOMAIN}${categoryLink}`;
-    }
-    return null;
-  }
-}
 
-// Extract clean product-type keywords from a title for fallback search
-// e.g. "Marshall Major V On-Ear Wireless Bluetooth Headphones - Black"
-//   → "on-ear wireless headphones"
-function extractSearchKeywords(title: string): string {
+// Extract search keywords — prefer BSR category name, fall back to cleaned title
+function extractSearchKeywords(product: AmazonProduct): string {
+  // Use BSR category (e.g. "Smartphones", "On-Ear Headphones") — most accurate
+  const bsrCategory = product.bestsellers_rank?.[product.bestsellers_rank.length - 1]?.category;
+  if (bsrCategory) return bsrCategory;
+
+  // Fallback: strip brand + noise from title
+  const title = product.title ?? product.keywords ?? "";
   const lower = title.toLowerCase();
-  // Strip brand names (first 1-2 words often brand), colors, model numbers
   const noise = /\b(black|white|brown|green|red|blue|gold|silver|v\d+|iv|iii|ii|i|-)\b/g;
   const cleaned = lower.replace(noise, "").replace(/\s+/g, " ").trim();
-  // Take middle portion — likely to be the product type
-  const words = cleaned.split(" ").slice(1, 6);
-  return words.join(" ");
+  return cleaned.split(" ").slice(1, 5).join(" ");
 }
 
 function productToListing(
-  product: RainforestProduct,
+  product: AmazonProduct,
   isTarget: boolean,
   runId: string
 ): NewListing {
@@ -90,10 +68,10 @@ function productToListing(
 }
 
 export class CompetitorDiscovery {
-  private client: RainforestClient;
+  private client: ScraperAPIClient;
 
   constructor() {
-    this.client = new RainforestClient();
+    this.client = new ScraperAPIClient();
   }
 
   async run(targetAsin: string, category: AmazonCategory): Promise<string> {
@@ -112,16 +90,11 @@ export class CompetitorDiscovery {
     await insertListing(productToListing(targetProduct, true, runId));
     console.log(`  ✓ Saved: ${targetProduct.title?.slice(0, 60)}`);
 
-    // Step 1: Try bestsellers from the product's own subcategory
-    let competitors = await this.fromBestsellers(targetProduct, targetAsin);
+    // Find competitors via also_bought variants + keyword search
+    const existing = new Set([targetAsin]);
+    let competitors = await this.fromAlsoBought(targetProduct, existing);
 
-    // Step 2: Fall back to filtered keyword search if bestsellers didn't yield enough
     if (competitors.length < 9) {
-      console.log(
-        `  ⚠ Only ${competitors.length} from bestsellers, falling back to keyword search...`
-      );
-      const existing = new Set(competitors.map((c) => c.asin));
-      existing.add(targetAsin);
       const fromSearch = await this.fromKeywordSearch(targetProduct, existing);
       competitors = [...competitors, ...fromSearch];
     }
@@ -146,49 +119,23 @@ export class CompetitorDiscovery {
     return runId;
   }
 
-  private async fromBestsellers(
-    product: RainforestProduct,
-    targetAsin: string
+  private async fromAlsoBought(
+    product: AmazonProduct,
+    exclude: Set<string>
   ): Promise<{ asin: string; title: string }[]> {
-    // Find the most specific subcategory URL from BSR data
-    const ranks = product.bestsellers_rank ?? [];
-    const subcategoryLink = ranks
-      .slice() // most specific = last entry
-      .reverse()
-      .map((r) => r.link)
-      .filter(Boolean)[0];
+    const variants = (product.also_bought ?? [])
+      .filter((v) => !exclude.has(v.asin))
+      .map((v) => ({ asin: v.asin, title: v.title ?? "" }));
 
-    if (!subcategoryLink) {
-      console.log("  No subcategory link found in BSR data, skipping bestsellers lookup");
-      return [];
-    }
-
-    const bestsellersUrl = toAbsoluteCategoryUrl(subcategoryLink) ?? subcategoryLink;
-    console.log(`\n🏆 Fetching bestsellers from subcategory...`);
-    console.log(`  URL: ${bestsellersUrl}`);
-
-    try {
-      const bestsellers = await this.client.getBestsellers(bestsellersUrl);
-      console.log(`  Found ${bestsellers.length} bestsellers`);
-
-      return this.filterAndDedupe(
-        bestsellers
-          .filter((b) => b.asin !== targetAsin)
-          .filter((b) => !isAccessory(b.title ?? ""))
-          .map((b) => ({ asin: b.asin, title: b.title ?? "", brand: b.brand ?? "" })),
-        product.brand ?? ""
-      );
-    } catch (err) {
-      console.warn(`  ⚠ Bestsellers fetch failed: ${(err as Error).message}`);
-      return [];
-    }
+    variants.forEach((v) => exclude.add(v.asin));
+    return variants.slice(0, 9);
   }
 
   private async fromKeywordSearch(
-    product: RainforestProduct,
+    product: AmazonProduct,
     exclude: Set<string>
   ): Promise<{ asin: string; title: string }[]> {
-    const keywords = extractSearchKeywords(product.title ?? "");
+    const keywords = extractSearchKeywords(product);
     console.log(`  Searching: "${keywords}"`);
 
     const results = await this.client.search(keywords);

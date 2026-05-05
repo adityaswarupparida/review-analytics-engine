@@ -17,6 +17,7 @@ import type { Listing, RevenueEstimate, PurchaseCriterion } from "../database/sc
 
 const eta = new Eta({
   views: path.join(import.meta.dir, "templates"),
+  defaultExtension: ".eta",
   cache: false,
 });
 
