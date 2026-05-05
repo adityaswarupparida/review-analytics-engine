@@ -1,4 +1,4 @@
-import { AmazonInClient, normalizeAmazonInReview } from "./amazon-client.js";
+import { AmazonInClient, normalizeAmazonInReview, type AmazonInReview } from "./amazon-client.js";
 import {
   getListingsByRun,
   bulkInsertReviews,
@@ -23,10 +23,13 @@ export class ReviewFetcher {
     let client: AmazonInClient;
     try {
       client = new AmazonInClient();
+      await client.checkSession(); // verify session is alive before starting
+      console.log("  ✓ Amazon session is active\n");
     } catch (err) {
-      console.error(`❌ ${(err as Error).message}`);
-      return;
+      throw new Error(`Cookie error: ${(err as Error).message}`);
     }
+
+    let csrfFailCount = 0;
 
     for (const listing of runListings) {
       const existing = await countReviews(listing.id);
@@ -46,19 +49,27 @@ export class ReviewFetcher {
         );
 
         if (rawReviews.length === 0) {
+          csrfFailCount++;
           console.log(`  ⚠ No reviews returned for ${listing.asin}`);
+          // 3 consecutive failures = session expired
+          if (csrfFailCount >= 3) {
+            throw new Error(
+              "Session expired — Amazon.in cookies are no longer valid. Please refresh your cookies and try again."
+            );
+          }
           continue;
         }
 
-        const rows = rawReviews.map((r) => normalizeAmazonInReview(r, listing.id));
+        csrfFailCount = 0;
+        const rows = rawReviews.map((r: AmazonInReview) => normalizeAmazonInReview(r, listing.id));
         await bulkInsertReviews(rows);
         console.log(`  ✓ ${listing.asin}: saved ${rows.length} reviews`);
       } catch (err) {
         const msg = (err as Error).message;
         console.error(`  ⚠ ${listing.asin} failed: ${msg}`);
-        if (msg.includes("Session expired")) {
+        if (msg.includes("Session expired") || msg.includes("cookies")) {
           console.error("  Stopping — re-login required: bun run test/login-amazon-in.ts");
-          break;
+          throw err;
         }
       }
     }

@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Running Analysis — Review Analytics</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+    header { background: #1e293b; border-bottom: 1px solid #334155; padding: 1rem 2rem; display: flex; align-items: center; justify-content: space-between; }
+    header h1 { font-size: 1.25rem; font-weight: 700; }
+    header a { font-size: 0.85rem; color: #64748b; text-decoration: none; }
+    header a:hover { color: #e2e8f0; }
+    main { max-width: 600px; margin: 0 auto; padding: 3rem 2rem; }
+
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 0.75rem; padding: 2rem; }
+    .card-title { font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .card-sub { font-size: 0.85rem; color: #64748b; margin-bottom: 2rem; }
+
+    .steps { display: flex; flex-direction: column; gap: 0; }
+    .step { display: flex; align-items: flex-start; gap: 1rem; padding: 0.875rem 0; position: relative; }
+    .step:not(:last-child)::after {
+      content: ''; position: absolute; left: 1.1rem; top: 2.5rem;
+      width: 2px; height: calc(100% - 1rem); background: #334155;
+    }
+    .step.done::after { background: #10b981; }
+
+    .icon {
+      width: 2.25rem; height: 2.25rem; border-radius: 9999px; display: flex;
+      align-items: center; justify-content: center; font-size: 0.9rem;
+      flex-shrink: 0; z-index: 1; border: 2px solid #334155; background: #0f172a;
+    }
+    .step.pending .icon  { color: #475569; border-color: #334155; }
+    .step.running .icon  { color: #0ea5e9; border-color: #0ea5e9; animation: pulse 1.5s ease-in-out infinite; }
+    .step.done .icon    { color: #10b981; border-color: #10b981; background: #064e3b; }
+    .step.error .icon   { color: #f87171; border-color: #f87171; background: #450a0a; }
+
+    @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(14,165,233,0.4); } 50% { box-shadow: 0 0 0 6px rgba(14,165,233,0); } }
+
+    .step-body { flex: 1; padding-top: 0.35rem; }
+    .step-label { font-size: 0.9rem; font-weight: 500; }
+    .step.pending .step-label  { color: #475569; }
+    .step.running .step-label  { color: #e2e8f0; }
+    .step.done .step-label    { color: #6ee7b7; }
+    .step.error .step-label   { color: #f87171; }
+    .step-msg { font-size: 0.8rem; color: #64748b; margin-top: 0.2rem; }
+    .step.error .step-msg { color: #fca5a5; }
+
+    .done-banner {
+      display: none; margin-top: 2rem; padding: 1rem 1.25rem; background: #064e3b;
+      border: 1px solid #10b981; border-radius: 0.5rem; text-align: center;
+    }
+    .done-banner p { color: #6ee7b7; font-size: 0.9rem; margin-bottom: 0.75rem; }
+    .btn-primary {
+      display: inline-block; padding: 0.625rem 1.5rem; background: #0ea5e9; color: #fff;
+      text-decoration: none; border-radius: 0.5rem; font-size: 0.9rem; font-weight: 600;
+    }
+    .btn-primary:hover { background: #0284c7; }
+
+    .error-banner {
+      display: none; margin-top: 2rem; padding: 1.25rem; background: #450a0a;
+      border: 1px solid #f87171; border-radius: 0.5rem;
+    }
+    .error-title { color: #fca5a5; font-size: 0.95rem; font-weight: 600; margin-bottom: 0.4rem; }
+    .error-detail { color: #fca5a5; font-size: 0.85rem; opacity: 0.8; margin-bottom: 0.3rem; }
+    .error-action { color: #fde68a; font-size: 0.82rem; margin-bottom: 1rem; }
+    .error-raw { font-size: 0.75rem; color: #7f1d1d; background: #3b0a0a; padding: 0.5rem 0.75rem; border-radius: 0.375rem; margin-bottom: 1rem; font-family: monospace; word-break: break-all; }
+    .btn-secondary {
+      display: inline-block; padding: 0.625rem 1.5rem; background: #1e293b; color: #e2e8f0;
+      text-decoration: none; border-radius: 0.5rem; font-size: 0.9rem; font-weight: 600;
+      border: 1px solid #334155; margin-right: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>📊 Review Analytics</h1>
+    <a href="/">← Back to Home</a>
+  </header>
+  <main>
+    <div class="card">
+      <div class="card-title">Running Analysis</div>
+      <div class="card-sub" id="subtitle">Starting pipeline...</div>
+
+      <div class="steps" id="steps">
+        <!-- Injected by JS -->
+      </div>
+
+      <div class="done-banner" id="doneBanner">
+        <p>✅ Analysis complete! Your dashboard is ready.</p>
+        <a class="btn-primary" id="dashboardLink" href="#">View Dashboard →</a>
+      </div>
+
+      <div class="error-banner" id="errorBanner">
+        <div class="error-title" id="errorTitle">Something went wrong</div>
+        <div class="error-detail" id="errorDetail"></div>
+        <div class="error-action" id="errorAction"></div>
+        <div class="error-raw" id="errorRaw"></div>
+        <a class="btn-secondary" id="retryBtn" href="/">← Start Over</a>
+      </div>
+    </div>
+  </main>
+
+<script>
+const STEPS = [
+  { step: 'discover',  label: 'Fetching Category & Discovering Competitors' },
+  { step: 'scrape',    label: 'Scraping Reviews' },
+  { step: 'analyze',   label: 'Analysing Reviews' },
+  { step: 'aggregate', label: 'Aggregating Criteria' },
+  { step: 'complete',  label: 'Preparing Analytics' },
+];
+
+const icons = {
+  pending: '○',
+  running: '◌',
+  done:    '✓',
+  error:   '✕',
+};
+
+const state = {};
+STEPS.forEach(s => state[s.step] = { status: 'pending', message: '' });
+
+function renderSteps() {
+  document.getElementById('steps').innerHTML = STEPS.map(s => {
+    const st = state[s.step];
+    return `
+      <div class="step ${st.status}" id="step-${s.step}">
+        <div class="icon">${icons[st.status]}</div>
+        <div class="step-body">
+          <div class="step-label">${s.label}</div>
+          ${st.message ? `<div class="step-msg">${st.message}</div>` : ''}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+const params = new URLSearchParams(location.search);
+const jobId = params.get('jobId');
+let runId = null;
+
+renderSteps();
+
+const evtSource = new EventSource(`/api/job/${jobId}/stream`);
+
+evtSource.onmessage = (e) => {
+  const ev = JSON.parse(e.data);
+
+  if (ev.runId) runId = ev.runId;
+
+  if (state[ev.step]) {
+    state[ev.step].status = ev.status;
+    state[ev.step].message = ev.message ?? '';
+  }
+
+  renderSteps();
+
+  // Update subtitle
+  if (ev.status === 'running') {
+    document.getElementById('subtitle').textContent = ev.message ?? 'Processing...';
+  }
+
+  // Done
+  if (ev.step === 'complete' && ev.status === 'done') {
+    evtSource.close();
+    document.getElementById('subtitle').textContent = 'All done!';
+    const link = runId ? `/dashboard?run=${runId}` : '/dashboard';
+    document.getElementById('dashboardLink').href = link;
+    document.getElementById('doneBanner').style.display = 'block';
+  }
+
+  // Error
+  if (ev.status === 'error') {
+    evtSource.close();
+    document.getElementById('subtitle').textContent = 'Analysis failed';
+    showError(ev.step, ev.message);
+  }
+};
+
+evtSource.onerror = () => {
+  evtSource.close();
+  document.getElementById('subtitle').textContent = 'Connection lost';
+  showError('connection', 'Lost connection to server.');
+};
+
+const ERROR_MESSAGES = {
+  discover: {
+    title: 'Failed to discover competitors',
+    detail: 'Could not fetch product data from Amazon. This may be a temporary issue with the data service.',
+    action: '💡 Check that the ASIN is valid and available on Amazon.in, then try again.',
+  },
+  scrape: {
+    title: 'Failed to scrape reviews',
+    detail: 'Could not load Amazon review pages. Your session may have expired.',
+    action: '💡 Run the login script again to refresh your Amazon session cookies.',
+  },
+  analyze: {
+    title: 'Failed to analyse reviews',
+    detail: 'The AI analysis service encountered an error.',
+    action: '💡 Check your Claude API key is valid and has available credits.',
+  },
+  aggregate: {
+    title: 'Failed to aggregate criteria',
+    detail: 'An internal error occurred while processing the analysis results.',
+    action: '💡 Try running the analysis again — this is usually a transient error.',
+  },
+  connection: {
+    title: 'Connection lost',
+    detail: 'The browser lost connection to the server mid-run.',
+    action: '💡 The job may still be running in the background. Check Past Runs on the home page.',
+  },
+};
+
+function showError(step, rawMessage) {
+  const info = ERROR_MESSAGES[step] || {
+    title: 'Something went wrong',
+    detail: 'An unexpected error occurred during the analysis.',
+    action: '💡 Please try again. If the problem persists, check the server logs.',
+  };
+
+  document.getElementById('errorTitle').textContent = info.title;
+  document.getElementById('errorDetail').textContent = info.detail;
+  document.getElementById('errorAction').textContent = info.action;
+
+  if (rawMessage) {
+    document.getElementById('errorRaw').textContent = `Technical detail: ${rawMessage}`;
+    document.getElementById('errorRaw').style.display = 'block';
+  }
+
+  document.getElementById('errorBanner').style.display = 'block';
+}
+</script>
+</body>
+</html>

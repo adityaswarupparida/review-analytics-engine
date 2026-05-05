@@ -58,13 +58,15 @@ interface ParsedPage {
 
 export class AmazonInClient {
   private cookieHeader: string;
+  private cookieMap: Map<string, string>; // name → value
   private csrfCache = new Map<string, string>(); // asin → csrf
 
   constructor() {
-    this.cookieHeader = this.loadCookies();
+    this.cookieMap = this.loadCookieMap();
+    this.cookieHeader = this.buildCookieHeader();
   }
 
-  private loadCookies(): string {
+  private loadCookieMap(): Map<string, string> {
     const cookiesPath = getCookiesPath();
     if (!fs.existsSync(cookiesPath)) {
       throw new Error(
@@ -75,7 +77,56 @@ export class AmazonInClient {
       name: string;
       value: string;
     }[];
-    return cookies.map((c) => `${c.name}=${c.value}`).join("; ");
+    return new Map(cookies.map((c) => [c.name, c.value]));
+  }
+
+  private buildCookieHeader(): string {
+    return [...this.cookieMap.entries()]
+      .map(([k, v]) => `${k}=${v}`)
+      .join("; ");
+  }
+
+  // Capture Set-Cookie headers from response and persist updated cookies to file
+  private refreshCookies(res: Response): void {
+    const raw = res.headers.get("set-cookie");
+    if (!raw) return;
+
+    // Parse each cookie from the combined Set-Cookie header
+    // Cookies are separated by ", " but values can contain commas — split on "; " boundaries
+    const cookieStrings = raw.split(/,\s*(?=[a-zA-Z_-]+=)/);
+    let updated = false;
+
+    for (const cookieStr of cookieStrings) {
+      const [pair] = cookieStr.split(";");
+      if (!pair) continue;
+      const eqIdx = pair.indexOf("=");
+      if (eqIdx < 0) continue;
+      const name = pair.slice(0, eqIdx).trim();
+      const value = pair.slice(eqIdx + 1).trim();
+      if (name && value && this.cookieMap.get(name) !== value) {
+        this.cookieMap.set(name, value);
+        updated = true;
+      }
+    }
+
+    if (updated) {
+      this.cookieHeader = this.buildCookieHeader();
+      const cookiesPath = getCookiesPath();
+      const arr = [...this.cookieMap.entries()].map(([name, value]) => ({ name, value }));
+      fs.writeFileSync(cookiesPath, JSON.stringify(arr, null, 2));
+    }
+  }
+
+  // Pre-run session health check
+  async checkSession(): Promise<void> {
+    const url = `https://${getDomain()}`;
+    const res = await fetch(url, { headers: this.pageHeaders() });
+    this.refreshCookies(res);
+    if (res.url.includes("/ap/signin")) {
+      throw new Error(
+        "Session expired — Amazon cookies are no longer valid. Please upload fresh cookies."
+      );
+    }
   }
 
   private pageHeaders(): Record<string, string> {
@@ -110,10 +161,11 @@ export class AmazonInClient {
 
     const url = `https://${getDomain()}/product-reviews/${asin}?reviewerType=all_reviews&sortBy=recent`;
     const res = await fetch(url, { headers: this.pageHeaders() });
+    this.refreshCookies(res); // persist any updated cookies
     const html = await res.text();
 
     if (res.url.includes("/ap/signin")) {
-      throw new Error("Session expired — run: bun run test/login-amazon-in.ts");
+      throw new Error("Session expired — Amazon cookies are no longer valid. Please upload fresh cookies.");
     }
 
     const match = html.match(/"reviewsCsrfToken"\s*:\s*"([^"]+)"/);
@@ -230,6 +282,7 @@ export class AmazonInClient {
       }
     );
 
+    this.refreshCookies(res); // persist any updated cookies
     return res.text();
   }
 
@@ -315,7 +368,7 @@ export function normalizeAmazonInReview(
   raw: AmazonInReview,
   listingId: number
 ) {
-  const { country, isoDate } = parseReviewDate(raw.date);
+  // date and country are already parsed in parseStreamingResponse — use directly
   return {
     listingId,
     reviewId: raw.reviewId,
@@ -323,8 +376,8 @@ export function normalizeAmazonInReview(
     body: raw.body,
     rating: raw.rating,
     verified: raw.verified,
-    date: isoDate,
-    country: raw.country ?? country,
+    date: raw.date,       // already ISO format e.g. "2026-04-25"
+    country: raw.country, // already extracted e.g. "India"
     helpfulVotes: raw.helpfulVotes,
   };
 }

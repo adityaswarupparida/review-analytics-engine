@@ -65,7 +65,7 @@ export async function insertListing(data: NewListing): Promise<Listing> {
 export async function getListingsByRun(runId: string): Promise<Listing[]> {
   return db.query.listings.findMany({
     where: eq(listings.runId, runId),
-    orderBy: [listings.isTarget],
+    orderBy: [desc(listings.isTarget)], // target (1) first, competitors (0) after
   });
 }
 

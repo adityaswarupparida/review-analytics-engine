@@ -124,7 +124,7 @@ export class ReviewAnalyzer {
   ): Promise<BatchAnalysisResult> {
     const response = await this.client.messages.create({
       model: "claude-sonnet-4-6",
-      max_tokens: 1024,
+      max_tokens: 4096,
       system: [
         {
           type: "text",
@@ -141,7 +141,10 @@ export class ReviewAnalyzer {
     try {
       return JSON.parse(block.text) as BatchAnalysisResult;
     } catch {
-      throw new Error(`Claude returned invalid JSON: ${block.text.slice(0, 200)}`);
+      const reason = response.stop_reason === "max_tokens"
+        ? "Response was cut off — max tokens reached"
+        : "Response was not valid JSON";
+      throw new Error(`Claude analysis failed (${reason}): ${block.text.slice(0, 150)}...`);
     }
   }
 }
