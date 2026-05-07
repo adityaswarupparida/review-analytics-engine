@@ -12,6 +12,8 @@ Automated Amazon product review analytics — discovers competitors, scrapes rev
 
 <img width="1683" height="983" alt="Screenshot 2026-05-07 at 1 13 42 PM" src="https://github.com/user-attachments/assets/f83927ed-70c7-49d2-9d67-ee0e1e18f553" />
 
+<img width="1688" height="943" alt="Screenshot 2026-05-07 at 1 21 16 PM" src="https://github.com/user-attachments/assets/f0859d62-29c6-4f6a-acad-010ccab278b0" />
+
 ## Architecture
 
 ```
