@@ -2,6 +2,16 @@
 
 Automated Amazon product review analytics — discovers competitors, scrapes reviews, runs AI analysis, and presents results via a web dashboard and email report.
 
+## Screenshots
+
+<img width="1697" height="920" alt="Screenshot 2026-05-07 at 1 12 24 PM" src="https://github.com/user-attachments/assets/0db0f555-8697-4533-955c-397ff7e22357" />
+
+<img width="1710" height="948" alt="Screenshot 2026-05-07 at 1 11 51 PM" src="https://github.com/user-attachments/assets/62a84fb0-7f80-44d4-829c-8d19a90b0aa9" />
+
+<img width="1679" height="815" alt="Screenshot 2026-05-07 at 1 13 14 PM" src="https://github.com/user-attachments/assets/48aa4a06-7d13-41d7-8726-5f96914eb44f" />
+
+<img width="1683" height="983" alt="Screenshot 2026-05-07 at 1 13 42 PM" src="https://github.com/user-attachments/assets/f83927ed-70c7-49d2-9d67-ee0e1e18f553" />
+
 ## Architecture
 
 ```
